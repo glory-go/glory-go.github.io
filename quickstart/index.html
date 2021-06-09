@@ -16,12 +16,12 @@ $ protoc --go_out=plugins=grpc:. *.proto
 会发现在同级目录下生成helloworld.pb.go文件
 如果您没有安装 protoc 和 protoc-gen-go 工具，上述命令将会报错。（或者因为您懒得敲命令）我们推荐您直接使用我们提供的在线pb生成工具，将上述代码拷贝入 grpc 编译器，手动将编译结果拷贝到同级目录的helloworld.pb.go文件内。
   撰写配置文件">
-  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link rel="stylesheet" href="https://glory-go.github.io/introduction/css/normalize.css">
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
   
   
   
-  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  <link rel="stylesheet" href="https://glory-go.github.io/introduction/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
   
   
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -50,31 +50,37 @@ $ protoc --go_out=plugins=grpc:. *.proto
       
       
       
-      <a href="/introduction/" class="btn">总体介绍</a>
+      <a href="/introduction/introduction/" class="btn">总体介绍</a>
     
       
       
       
       
-      <a href="/quickstart/" class="btn">快速开始</a>
+      <a href="/introduction/quickstart/" class="btn">快速开始</a>
     
       
       
       
       
-      <a href="/samples/" class="btn">示例</a>
+      <a href="/introduction/samples/" class="btn">示例</a>
     
       
       
       
       
-      <a href="/index.xml" class="btn">如何贡献</a>
+      <a href="/introduction/doc/" class="btn">开发文档</a>
     
       
       
       
       
-      <a href="/about/" class="btn">联系我们</a>
+      <a href="/introduction/about/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/introduction/index.xml" class="btn">如何贡献</a>
     
   </nav>
 </section>
@@ -292,7 +298,7 @@ go get ./...
 
 <span style="color:#408080;font-style:italic">// 定义 response 结构体
 </span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> gloryHttpRsp <span style="color:#008000;font-weight:bold">struct</span> {
-	Output <span style="color:#b00040">int</span> <span style="color:#ba2121">`schema:&#34;output&#34;`</span>
+	Output <span style="color:#b00040">int</span> <span style="color:#ba2121">`json:&#34;output&#34;`</span>
 }
 
 <span style="color:#408080;font-style:italic">// 自定义业务逻辑处理 handler
@@ -393,7 +399,7 @@ config center info: can<span style="">&#39;</span>t load config center config at
 
     <footer class="site-footer">
   <span class="site-footer-credits">
-    Made with <a href="https://gohugo.io/">Hugo</a>. Themed by <a href="https://github.com/zwbetz-gh/cayman-hugo-theme">Cayman</a>. Deployed to <a href="https://www.netlify.com/">Netlify</a>.
+    
   </span>
 </footer>
 
