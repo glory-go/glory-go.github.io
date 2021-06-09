@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>请点击快速开始页面 on Hello Glory Title</title>
-    <link>https://glory-go.github.io/introduction/</link>
+    <link>https://glory-go.github.io/</link>
     <description>Recent content in 请点击快速开始页面 on Hello Glory Title</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 08 Jun 2021 23:36:08 +0800</lastBuildDate><atom:link href="https://glory-go.github.io/introduction/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 08 Jun 2021 23:36:08 +0800</lastBuildDate><atom:link href="https://glory-go.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>开发文档</title>
-      <link>https://glory-go.github.io/introduction/doc/</link>
+      <link>https://glory-go.github.io/doc/</link>
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
-      <guid>https://glory-go.github.io/introduction/doc/</guid>
+      <guid>https://glory-go.github.io/doc/</guid>
       <description>统一配置服务
  配置中心拉取    单个特定协议Service启动
   开启grpc服务
@@ -27,10 +27,10 @@
     
     <item>
       <title>开发文档</title>
-      <link>https://glory-go.github.io/introduction/post/doc/config/</link>
+      <link>https://glory-go.github.io/post/doc/config/</link>
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
-      <guid>https://glory-go.github.io/introduction/post/doc/config/</guid>
+      <guid>https://glory-go.github.io/post/doc/config/</guid>
       <description>统一配置服务
  配置中心拉取    单个特定协议Service启动
   开启grpc服务
@@ -45,10 +45,10 @@
     
     <item>
       <title>快速开始</title>
-      <link>https://glory-go.github.io/introduction/quickstart/</link>
+      <link>https://glory-go.github.io/quickstart/</link>
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
-      <guid>https://glory-go.github.io/introduction/quickstart/</guid>
+      <guid>https://glory-go.github.io/quickstart/</guid>
       <description>在开始本章前，我们假定您熟悉 gRPC-go  的基础使用方法，以及 Go 语言语法。
 环境要求：bash &amp;amp;&amp;amp; go version &amp;gt;= go 1.11
 1. 带您开启一次gRPC调用 1.1 server 端   定义IDL (接口描述 .proto文件）：
@@ -63,10 +63,10 @@ $ protoc --go_out=plugins=grpc:. *.proto
     
     <item>
       <title>总体介绍</title>
-      <link>https://glory-go.github.io/introduction/introduction/</link>
+      <link>https://glory-go.github.io/introduction/</link>
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
-      <guid>https://glory-go.github.io/introduction/introduction/</guid>
+      <guid>https://glory-go.github.io/introduction/</guid>
       <description>Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在微服务场景下使用gRPC进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。
 Glory具有以下功能：
   通信协议：Glory框架提供gRPC（client端和server端）、HTTP（server端）、Websocket（server端）脚手架，你可以通过几行配置和几行代码快速开启多个gRPC或HTTP服务。
@@ -82,10 +82,10 @@ Glory具有以下功能：
     
     <item>
       <title>示例说明</title>
-      <link>https://glory-go.github.io/introduction/samples/</link>
+      <link>https://glory-go.github.io/samples/</link>
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
-      <guid>https://glory-go.github.io/introduction/samples/</guid>
+      <guid>https://glory-go.github.io/samples/</guid>
       <description>samples</description>
     </item>
     
