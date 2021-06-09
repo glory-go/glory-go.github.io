@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>请点击快速开始页面 on Hello Glory Title</title>
+    <title>请点击总体介绍页面 on Hello Glory</title>
     <link>https://glory-go.github.io/</link>
-    <description>Recent content in 请点击快速开始页面 on Hello Glory Title</description>
+    <description>Recent content in 请点击总体介绍页面 on Hello Glory</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 08 Jun 2021 23:36:08 +0800</lastBuildDate><atom:link href="https://glory-go.github.io/index.xml" rel="self" type="application/rss+xml" />
@@ -152,7 +152,9 @@ $ protoc --go_out=plugins=grpc:. *.proto
       <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
       
       <guid>https://glory-go.github.io/introduction/</guid>
-      <description>Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在微服务场景下使用gRPC进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。
+      <description>我们的github仓库：https://github.com/glory-go/glory
+我们的示例仓库：https://github.com/glory-go/glory-demo
+Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在微服务场景下使用gRPC进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。
 Glory具有以下功能：
   通信协议：Glory框架提供gRPC（client端和server端）、HTTP（server端）、Websocket（server端）脚手架，你可以通过几行配置和几行代码快速开启多个gRPC或HTTP服务。
   配置：Glory框架提供统一化的配置服务，您只需要在main文件同级目录config文件夹下定义glory.yaml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。
