@@ -162,7 +162,8 @@ Glory具有以下功能：
   数据上报：glory框架提供基于Promethus的数据上报服务，你可以在配置文件中定义自己需要的数据上报方式，同时支持基于promethus-pushgateway的推模式数据上报。
   第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。
   服务治理：Glory框架提供基于K8s、Nacos的服务发现机制，可以在k8s集群中自动进行Glory-gRPC服务实例的注册、发现和负载均衡。
-  下一章：快速开始</description>
+  如果觉得不错的话，点我给个star吧 感谢！
+下一章：快速开始</description>
     </item>
     
     <item>
@@ -187,7 +188,9 @@ http 服务端示例，目前提供http server和websocket server
 RPC调用相关示例，目前主要支持grpc调用
   soa/
 提供服务治理相示例：grpc 过滤器示例，服务发现相关示例，支持基于k8s、nacos的服务发现方案。
-  2. 如何运行 部分示例存在依赖启动脚本，需要 docker 环境。</description>
+  2. 如何运行 部分示例存在依赖启动脚本，需要 docker 环境。
+如果觉得不错的话，点我给个star吧 感谢！
+下一篇：开发文档</description>
     </item>
     
     <item>
