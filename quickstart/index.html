@@ -6,21 +6,16 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="generator" content="Hugo 0.83.1" />
   
-  <meta name="description" content="Glory —— 一款轻量级微服务框架 1. release note 2. 功能介绍 2.1 总体介绍 glory框架为一款轻量级微服务框架，你可以使用它快速开发你的服务端。
-  在协议方面：glory框架提供grpc（client端和server端）、http（server端）脚手架，你可以通过几行配置和几行代码快速开启一个grpc或http服务。
-glory框架还提供具备服务治理能力的glory协议，通过glory协议暴露的服务，在整个rpc过程中，框架可提供服务注册、服务发现、集群策略、负载均衡等服务治理能力，并且支持基于glory协议的流式rpc。
-  在配置方面：glory框架提供统一化的配置服务，你只需要在main文件同级目录config文件夹下定义glory.yml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。
-你也可以选择从阿里云 nacos 配置中心拉取当前服务所需配置。
-  日志：glory框架提供日志服务，你可以在配置文件中定义自己需要的日志记录方式。支持命令行、文件、远程（基于elastic、阿里云sls）的日志收集。
-  链路追踪：glory框架提供适配于 grpc 的链路追踪服务，你可以选择将服务调用链路上报至阿里云链路追踪平台进行监控和错误追溯。
-  数据上报：glory框架提供基于promethus的数据上报服务，你可以在配置文件中定义自己需要的数据上报方式，支持基于promethus-pushgateway的推式数据上报，以及传统拉式数据上报。
-  第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、oss、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。
-  2.2 各模块详细介绍 //这部分待不断补充
-  统一配置服务
- 配置中心拉取    单个特定协议Service启动
-  开启grpc服务
- grpc-server rpc-client    开启http服务
- http-server  http filter链实现      Triple (dubbo3) 协议和网络模型接入">
+  <meta name="description" content="在开始本章前，我们假定您熟悉 gRPC-go  的基础使用方法，以及 Go 语言语法。
+环境要求：bash &amp;&amp; go version &gt;= go 1.11
+1. 带您开启一次gRPC调用 1.1 server 端   定义IDL (接口描述 .proto文件）：
+新建sever文件夹，作为server端项目的根目录
+server文件夹下新建helloworld.proto, 写入以下内容作为接口描述，该内容定义了一个接口名为Greeter，包含SayHello方法，以及请求参数HelloRequest 和返回参数HelloReply 的定义。
+syntax = &#34;proto3&#34;;option go_package = &#34;glory/main&#34;;package main;service Greeter { rpc SayHello (HelloRequest) returns (HelloReply) {}}message HelloRequest { string name = 1;}message HelloReply { string message = 1;}(可选）在当前目录下执行
+$ protoc --go_out=plugins=grpc:. *.proto
+会发现在同级目录下生成helloworld.pb.go文件
+如果您没有安装 protoc 和 protoc-gen-go 工具，上述命令将会报错。（或者因为您懒得敲命令）我们推荐您直接使用我们提供的在线pb生成工具，将上述代码拷贝入 grpc 编译器，手动将编译结果拷贝到同级目录的helloworld.pb.go文件内。
+  撰写配置文件">
   <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
   
@@ -37,7 +32,7 @@ glory框架还提供具备服务治理能力的glory协议，通过glory协议�
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
 
-  <title>Quickstart | Hello Glory Title</title>
+  <title>快速开始 | Hello Glory Title</title>
 </head>
 
 <body>
@@ -55,6 +50,12 @@ glory框架还提供具备服务治理能力的glory协议，通过glory协议�
       
       
       
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
       <a href="/quickstart/" class="btn">快速开始</a>
     
       
@@ -67,204 +68,79 @@ glory框架还提供具备服务治理能力的glory协议，通过glory协议�
       
       
       
-      <a href="/about/" class="btn">联系我们</a>
+      <a href="/index.xml" class="btn">如何贡献</a>
     
       
       
       
       
-      <a href="/index.xml" class="btn">如何贡献</a>
+      <a href="/about/" class="btn">联系我们</a>
     
   </nav>
 </section>
 
   <section class="main-content">
     
-  <h1>Quickstart</h1>
-  <div>
-    
-    <strong>Publish date: </strong>2021-06-08
-  </div>
-  
-  
-  <h1 id="glory--一款轻量级微服务框架">Glory —— 一款轻量级微服务框架</h1>
-<h2 id="1-release-note">1. release note</h2>
-<h2 id="2-功能介绍">2. 功能介绍</h2>
-<h3 id="21-总体介绍">2.1 总体介绍</h3>
-<p>glory框架为一款轻量级微服务框架，你可以使用它快速开发你的服务端。</p>
-<ul>
-<li>
-<p>在协议方面：glory框架提供grpc（client端和server端）、http（server端）脚手架，你可以通过几行配置和几行代码快速开启一个grpc或http服务。</p>
-<p>glory框架还提供具备服务治理能力的<strong>glory协议</strong>，通过glory协议暴露的服务，在整个rpc过程中，框架可提供<strong>服务注册、服务发现、集群策略、负载均衡</strong>等服务治理能力，并且支持基于glory协议的<strong>流式rpc</strong>。</p>
-</li>
-<li>
-<p>在配置方面：glory框架提供<strong>统一化的配置服务</strong>，你只需要在main文件同级目录config文件夹下定义glory.yml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。</p>
-<p>你也可以选择从阿里云 nacos <strong>配置中心拉取</strong>当前服务所需配置。</p>
-</li>
-<li>
-<p>日志：glory框架提供<strong>日志服务</strong>，你可以在配置文件中定义自己需要的日志记录方式。支持命令行、文件、远程（基于elastic、阿里云sls）的日志收集。</p>
-</li>
-<li>
-<p>链路追踪：glory框架提供适配于 <strong>grpc 的链路追踪</strong>服务，你可以选择将服务调用链路上报至阿里云链路追踪平台进行监控和错误追溯。</p>
-</li>
-<li>
-<p>数据上报：glory框架提供<strong>基于promethus的数据上报</strong>服务，你可以在配置文件中定义自己需要的数据上报方式，支持基于promethus-pushgateway的推式数据上报，以及传统拉式数据上报。</p>
-</li>
-<li>
-<p>第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、oss、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。</p>
-</li>
-</ul>
-<h3 id="22-各模块详细介绍">2.2 各模块详细介绍</h3>
-<p>//这部分待不断补充</p>
-<ul>
-<li>
-<p><a href="./config/README.md">统一配置服务</a></p>
-<ul>
-<li>配置中心拉取</li>
-</ul>
-</li>
-<li>
-<p><a href="./service/README.md">单个特定协议Service启动</a></p>
-<ul>
-<li>
-<p>开启grpc服务</p>
-<ul>
-<li>grpc-server</li>
-<li>rpc-client</li>
-</ul>
-</li>
-<li>
-<p>开启http服务</p>
-<ul>
-<li>http-server
-<ul>
-<li><a href="./http/README.md">http filter链实现</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p>Triple (dubbo3) 协议和网络模型接入</p>
-</li>
-</ul>
-</li>
-<li>
-<p><a href="./protocol/glory/README.md">使用glory协议实现RPC</a></p>
-<ul>
-<li>服务注册发现
-<ul>
-<li>nacos</li>
-<li><a href="./registry/k8s/README.md">k8s</a></li>
-<li>redis</li>
-</ul>
-</li>
-<li>负载均衡
-<ul>
-<li>round_robin</li>
-<li>random（后续支持）</li>
-</ul>
-</li>
-<li>集群策略</li>
-</ul>
-</li>
-<li>
-<p>日志</p>
-<ul>
-<li>阿里云sls</li>
-<li>elastic</li>
-</ul>
-</li>
-<li>
-<p><a href="./metrics/README.md">数据上报(基于 prometheus)</a></p>
-</li>
-<li>
-<p>链路追踪</p>
-<ul>
-<li><a href="./filter/filter_impl/README.md">grpc - 阿里云链路追踪收集</a></li>
-</ul>
-</li>
-<li>
-<p>数据库</p>
-<ul>
-<li>redis</li>
-<li>mysql</li>
-<li>mongodb</li>
-</ul>
-</li>
-<li>
-<p><a href="./error/README.md">分层错误码</a></p>
-</li>
-<li>
-<p>oss 对象存储</p>
-<ul>
-<li>qiniu sdk</li>
-</ul>
-</li>
-<li>
-<p>消息</p>
-<ul>
-<li>rabbitmq</li>
-</ul>
-</li>
-</ul>
-<h2 id="3-quick-start">3. quick start</h2>
-<h3 id="31-手把手带你开启一次grpc调用">3.1 手把手带你开启一次grpc调用</h3>
-<h5 id="311-server端">3.1.1 server端</h5>
+  <h1>快速开始</h1>
+  <p>在开始本章前，我们假定您熟悉 <a href="http://doc.oschina.net/grpc?t=60133">gRPC-go </a> 的基础使用方法，以及 <a href="https://golang.org/">Go</a> 语言语法。</p>
+<p>环境要求：bash &amp;&amp; go version &gt;= go 1.11</p>
+<h2 id="1-带您开启一次grpc调用">1. 带您开启一次gRPC调用</h2>
+<h3 id="11--server-端">1.1  server 端</h3>
 <ol>
 <li>
-<p>定义IDL (接口描述语言）：</p>
-<p>新建sever文件夹，server文件夹下新建helloworld.proto</p>
+<p>定义IDL (接口描述 .proto文件）：</p>
+<p>新建sever文件夹，作为server端项目的根目录</p>
+<p>server文件夹下新建helloworld.proto, 写入以下内容作为接口描述，该内容定义了一个接口名为Greeter，包含SayHello方法，以及请求参数HelloRequest 和返回参数HelloReply 的定义。</p>
 <div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-protobuf" data-lang="protobuf">syntax <span style="color:#666">=</span> <span style="color:#ba2121">&#34;proto3&#34;</span>;<span style="">
 </span><span style="">
+</span><span style=""></span><span style="color:#008000;font-weight:bold">option</span> go_package <span style="color:#666">=</span> <span style="color:#ba2121">&#34;glory/main&#34;</span>;<span style="">
 </span><span style=""></span><span style="color:#008000;font-weight:bold">package</span> <span style="color:#00f;font-weight:bold">main</span>;<span style="">
 </span><span style="">
-</span><span style=""></span><span style="color:#408080;font-style:italic">// The greeting service definition.
-</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">service</span> Greeter {<span style="">
-</span><span style=""></span>  <span style="color:#408080;font-style:italic">// Sends a greeting
-</span><span style="color:#408080;font-style:italic"></span>  <span style="color:#008000;font-weight:bold">rpc</span> SayHello (HelloRequest) <span style="color:#008000;font-weight:bold">returns</span> (HelloReply) {}<span style="">
+</span><span style=""></span><span style="color:#008000;font-weight:bold">service</span> Greeter {<span style="">
+</span><span style=""></span>  <span style="color:#008000;font-weight:bold">rpc</span> SayHello (HelloRequest) <span style="color:#008000;font-weight:bold">returns</span> (HelloReply) {}<span style="">
 </span><span style=""></span>}<span style="">
 </span><span style="">
-</span><span style=""></span><span style="color:#408080;font-style:italic">// The request message containing the user&#39;s name.
-</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">message</span> <span style="color:#00f;font-weight:bold">HelloRequest</span> {<span style="">
+</span><span style=""></span><span style="color:#008000;font-weight:bold">message</span> <span style="color:#00f;font-weight:bold">HelloRequest</span> {<span style="">
 </span><span style=""></span>  <span style="color:#b00040">string</span> name <span style="color:#666">=</span> <span style="color:#666">1</span>;<span style="">
 </span><span style=""></span>}<span style="">
 </span><span style="">
-</span><span style=""></span><span style="color:#408080;font-style:italic">// The response message containing the greetings
-</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">message</span> <span style="color:#00f;font-weight:bold">HelloReply</span> {<span style="">
+</span><span style=""></span><span style="color:#008000;font-weight:bold">message</span> <span style="color:#00f;font-weight:bold">HelloReply</span> {<span style="">
 </span><span style=""></span>  <span style="color:#b00040">string</span> <span style="color:#008000;font-weight:bold">message</span> <span style="color:#666">=</span> <span style="color:#666">1</span>;<span style="">
 </span><span style=""></span>}<span style="">
-</span></code></pre></div><p>执行</p>
+</span></code></pre></div><p>(可选）在当前目录下执行</p>
 <p><code>$ protoc --go_out=plugins=grpc:. *.proto</code></p>
-<p>同级目录下生成helloworld.pb.go文件</p>
+<p>会发现在同级目录下生成helloworld.pb.go文件</p>
+<p>如果您没有安装 <a href="https://github.com/protocolbuffers/protobuf/releases">protoc</a> 和 <a href="https://github.com/golang/protobuf/tree/master/protoc-gen-go">protoc-gen-go</a> 工具，上述命令将会报错。（<strong>或者因为您懒得敲命令</strong>）我们推荐您直接使用我们提供的<a href="http://124.71.229.160">在线pb生成工具</a>，将上述代码拷贝入 grpc 编译器，手动将编译结果拷贝到同级目录的helloworld.pb.go文件内。</p>
 </li>
 <li>
 <p>撰写配置文件</p>
+<p>在server文件夹下新建config文件夹，新建glory.yaml配置文件如下</p>
 <p>server/config/glory.yaml</p>
-<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>ide<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>grpc-demo-server<span style="color:#bbb">
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>glory<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务所属组织，内容随意</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>grpc-demo-server<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务名，内容随意</span><span style="color:#bbb">
 </span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">log </span>:<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 日志配置</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;console-log&#34;</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">log_type</span>:<span style="color:#bbb"> </span>console<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 命令行输出日志</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">level</span>:<span style="color:#bbb"> </span>debug<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 日志等级</span><span style="color:#bbb">
 </span><span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">provider</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">provider</span>:<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 服务端配置</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#008000;font-weight:bold">&#34;gloryGrpcService&#34;: </span><span style="color:#408080;font-style:italic"># service 名称可自定义</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 通过grpc暴露</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># service 唯一ID，用于服务注册</span><span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#408080;font-style:italic">#  service_id: glory-grpc-provider # 服务ID，用于服务发现，目前没用到</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 选择grpc协议暴露</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#666">8080</span><span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 暴露端口</span><span style="color:#bbb">
 </span></code></pre></div></li>
 <li>
-<p>main.go文件</p>
+<p>建立server/main.go文件</p>
 <div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">package</span> main
 
 <span style="color:#008000;font-weight:bold">import</span> (
 	<span style="color:#ba2121">&#34;context&#34;</span>
 
-    <span style="color:#408080;font-style:italic">// 开启框架服务必须引入
+    <span style="color:#408080;font-style:italic">// 开启框架服务实例必须引入
 </span><span style="color:#408080;font-style:italic"></span>	<span style="color:#ba2121">&#34;github.com/glory-go/glory/glory&#34;</span>
     <span style="color:#408080;font-style:italic">// 使用日志组件必须引入
 </span><span style="color:#408080;font-style:italic"></span>	<span style="color:#ba2121">&#34;github.com/glory-go/glory/log&#34;</span>
-    <span style="color:#408080;font-style:italic">// 注册service必须引入
+    <span style="color:#408080;font-style:italic">// 注册服务端service必须引入
 </span><span style="color:#408080;font-style:italic"></span>	<span style="color:#ba2121">&#34;github.com/glory-go/glory/service&#34;</span>
 )
 
@@ -279,67 +155,62 @@ glory框架还提供具备服务治理能力的glory协议，通过glory协议�
 }
 
 <span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
-	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
-	gloryService <span style="color:#666">:=</span> service.<span style="color:#00f">NewGrpcService</span>(<span style="color:#ba2121">&#34;gloryGrpcService&#34;</span>)
-	<span style="color:#00f">RegisterGreeterServer</span>(gloryService.<span style="color:#00f">GetGrpcServer</span>(), <span style="color:#666">&amp;</span>server{})
-	gloryServer.<span style="color:#00f">RegisterService</span>(gloryService)
-	gloryServer.<span style="color:#00f">Run</span>()
+    <span style="color:#408080;font-style:italic">// 开启服务实例，一个程序只需要一个gloryServer即可，一个server上可以注册不同协议的一个或多个glory service，再统一暴露。
+</span><span style="color:#408080;font-style:italic"></span>	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
+
+    <span style="color:#408080;font-style:italic">// 实例化配置，此处gloryGrpcService对应glory.yaml配置文件中的service 名称，glory框架通过改服务名选择对应配置进行实例化
+</span><span style="color:#408080;font-style:italic"></span>	gloryService <span style="color:#666">:=</span> service.<span style="color:#00f">NewGrpcService</span>(<span style="color:#ba2121">&#34;gloryGrpcService&#34;</span>) 
+    <span style="color:#408080;font-style:italic">// 注册用户定义的实例化grpc服务结构到grpc组件上。
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#00f">RegisterGreeterServer</span>(gloryService.<span style="color:#00f">GetGrpcServer</span>(), <span style="color:#666">&amp;</span>server{})
+    <span style="color:#408080;font-style:italic">// 注册当前grpc service 到gloryserver上
+</span><span style="color:#408080;font-style:italic"></span>	gloryServer.<span style="color:#00f">RegisterService</span>(gloryService)
+
+    <span style="color:#408080;font-style:italic">// 启动glory server，如有多个service注册到当前server，则会一并启动
+</span><span style="color:#408080;font-style:italic"></span>	gloryServer.<span style="color:#00f">Run</span>()
 }
 
 
 </code></pre></div></li>
 <li>
-<p>拉取依赖</p>
-<p><code>$ go mod init glory-grpc-server-demo </code></p>
-<p><code>$ export GOPROXY=&quot;http://goproxy.io&quot;</code></p>
-<p><code>$ export GOPRIVATE=&quot;git.go-online.org.cn&quot;</code></p>
-<p><code>$ go get</code></p>
-<p>可能会要求输入密码，因为框架属于私有仓库</p>
+<p>执行下述脚本，开启 gomod 拉取依赖</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">go mod init glory-grpc-server-demo 
+<span style="color:#008000">export</span> <span style="color:#19177c">GOPROXY</span><span style="color:#666">=</span><span style="color:#ba2121">&#34;https://goproxy.cn&#34;</span>
+go get ./...
+</code></pre></div><p>拉取依赖时间较长，请耐心等候</p>
 <p>go get成功后如果ide报错，尝试重启goland</p>
-<p>如果还是爆红，尝试在goland-setting-go-gomodules-environment 配置上面两个环境变量。</p>
+<p>如果还是爆红，尝试在goland-setting-go-gomodules-environment 配置GOPROXY环境变量。</p>
 </li>
 <li>
 <p>运行服务</p>
 <p><code>$ go run .</code></p>
 <p>可看到控制台输出：</p>
 <div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ go run .
-org_name: ide
-server_name: grpc-demo-server
-yamlFile: log : # 日志配置
-  &#34;console-log&#34;:
-    log_type: console # 命令行输出日志
-    level: debug # 日志等级
-
-provider:
-  &#34;gloryGrpcService&#34;: # service 名称可自定义
-    protocol: grpc # 通过grpc暴露
-    service_id: GoOnline-IDE-gloryService # service 唯一ID，用于服务注册
-    port: 8080 # 暴露端口
+config center info: can&#39;t load config center config at config/config_center.yaml
 grpc start listening on :8080
 
-</code></pre></div><p>代表grpc服务启动成功</p>
+</code></pre></div><p>代表gRPC服务启动成功</p>
 </li>
 </ol>
-<h4 id="312-client端">3.1.2 client端</h4>
+<h3 id="12-client-端">1.2 client 端</h3>
 <ol>
 <li>
-<p>server同级目录下建立client文件夹，定义IDL (接口描述语言）helloworld.proto，文件内容与server端完全一致。相同方法编译生成.pb.go文件。</p>
+<p>server同级目录下建立client文件夹，定义IDL (接口描述语言）helloworld.proto，文件内容与server端完全一致。相同方法编译生成.pb.go文件，可以直接将server的拷贝过来。</p>
 </li>
 <li>
 <p>撰写配置文件</p>
 <p>client/config/glory.yaml</p>
-<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>ide<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>grpc-demo-client<span style="color:#bbb">
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yml" data-lang="yml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>glory<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务所属组织，内容随意</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>grpc-demo-client<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务名，内容随意</span><span style="color:#bbb">
 </span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">log </span>:<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 日志配置</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;console-log&#34;</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">log_type</span>:<span style="color:#bbb"> </span>console<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 命令行输出日志</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">level</span>:<span style="color:#bbb"> </span>debug<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 日志等级</span><span style="color:#bbb">
 </span><span style="color:#bbb">
 </span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">consumer </span>:<span style="color:#bbb">
-</span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;grpc-helloworld-demo&#34;</span>:<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">server_address</span>:<span style="color:#bbb"> </span><span style="color:#666">127.0.0.1</span>:<span style="color:#666">8080</span><span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#008000;font-weight:bold">&#34;grpc-helloworld-demo&#34;: </span><span style="color:#408080;font-style:italic"># service 名称可自定义</span><span style="color:#bbb">
+</span><span style="color:#bbb">   </span><span style="color:#408080;font-style:italic">#  service_id: glory-grpc-provider # 服务ID，用于服务发现，目前没用到</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">server_address</span>:<span style="color:#bbb"> </span><span style="color:#666">127.0.0.1</span>:<span style="color:#666">8080</span><span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 服务端地址</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 选择grpc协议暴露</span><span style="color:#bbb">
 </span></code></pre></div></li>
 <li>
 <p>main.go</p>
@@ -355,10 +226,10 @@ grpc start listening on :8080
 )
 
 <span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
-	<span style="color:#408080;font-style:italic">// 从配置生成grpc客户端，与配置中serviceName对应
+	<span style="color:#408080;font-style:italic">// 从配置生成glory-grpc客户端，与配置中serviceName对应
 </span><span style="color:#408080;font-style:italic"></span>	client <span style="color:#666">:=</span> grpc.<span style="color:#00f">NewGrpcClient</span>(<span style="color:#ba2121">&#34;grpc-helloworld-demo&#34;</span>)
 
-    <span style="color:#408080;font-style:italic">// 与协议文件结合，拿到greeterClient
+    <span style="color:#408080;font-style:italic">// 与协议文件结合，通过glory-grpc客户端拿到grpc原生Conn,生成grpc client
 </span><span style="color:#408080;font-style:italic"></span>	greeterClient <span style="color:#666">:=</span> <span style="color:#00f">NewGreeterClient</span>(client.<span style="color:#00f">GetConn</span>())
 
     <span style="color:#408080;font-style:italic">// 发起rpc调用，传递参数
@@ -375,42 +246,24 @@ grpc start listening on :8080
 </code></pre></div></li>
 <li>
 <p>和server端完全一样，拉取依赖</p>
-<p><code>$ go mod init glory-grpc-client-demo</code></p>
-<p><code>$ export GOPROXY=&quot;http://goproxy.io&quot;</code></p>
-<p><code>$ export GOPRIVATE=&quot;git.go-online.org.cn&quot;</code></p>
-<p><code>$ go get</code></p>
-<p>可能会要求输入密码，因为框架属于私有仓库</p>
-<p>go get成功后如果ide报错，尝试重启goland</p>
-<p>如果还是爆红，尝试在goland-setting-go-gomodules-environment 配置上面两个环境变量。</p>
-</li>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod init glory-grpc-client-demo 
+<span style="color:#008000">export</span> <span style="color:#19177c">GOPROXY</span><span style="color:#666">=</span><span style="color:#ba2121">&#34;https://goproxy.cn&#34;</span>
+go get ./...
+</code></pre></div></li>
 <li>
 <p>运行服务</p>
 <p><code>$ go run .</code></p>
 <p>可看到控制台输出：</p>
-<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">$ go run .
-org_name: ide
-server_name: grpc-demo-client
-yamlFile: log : # 日志配置
-  &#34;console-log&#34;:
-    log_type: console # 命令行输出日志
-    level: debug # 日志等级
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">2021-06-09T14:43:35.560+0800    info    client/main.go:27       reply = message:&#34;Hello grpcDemo&#34;
 
-consumer :
-  &#34;grpc-helloworld-demo&#34;:
-    service_id: GoOnline-IDE-gloryService
-    server_address: 127.0.0.1:8080
-    protocol: grpc
-2020-12-13T22:33:16.330+0800    info    grpc/client.go:16       [[{8080 127.0.0.1}]]
-
-2020-12-13T22:33:16.438+0800    info    client/main.go:19       reply = [[message:&#34;Hello grpcDemo&#34; ]]
-
-</code></pre></div><p>rpc调用成功</p>
+</code></pre></div><p>gRPC调用成功</p>
 </li>
 </ol>
-<h3 id="32-运行一个简易http-server">3.2 运行一个简易http-server</h3>
-<p>config/glory.yaml</p>
-<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>ide<span style="color:#bbb">
-</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>http-demo-server<span style="color:#bbb">
+<h3 id="21-运行一个简易-http-server">2.1 运行一个简易 http-server</h3>
+<p>新建一个 http-server 目录存放项目</p>
+<p>http-server/config/glory.yaml</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>glory<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务所属组织，内容随意</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>http-demo-server<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 必填，服务名，内容随意</span><span style="color:#bbb">
 </span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">log </span>:<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 日志配置</span><span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;console-log&#34;</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">log_type</span>:<span style="color:#bbb"> </span>console<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 命令行输出日志</span><span style="color:#bbb">
@@ -419,9 +272,9 @@ consumer :
 </span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">provider</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;httpDemo&#34;</span>:<span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
-</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#408080;font-style:italic"># service_id: GoOnline-IDE-gloryService # 服务ID，用于服务发现，目前没用到</span><span style="color:#bbb">
 </span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#666">8080</span><span style="color:#bbb">
-</span></code></pre></div><p>main.go</p>
+</span></code></pre></div><p>http-server/main.go</p>
 <div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">package</span> main
 
 <span style="color:#008000;font-weight:bold">import</span> (
@@ -431,13 +284,11 @@ consumer :
 	<span style="color:#ba2121">&#34;github.com/glory-go/glory/service&#34;</span>
 )
 
-<span style="color:#408080;font-style:italic">// 定义 request 结构体，支持 validate 标签校验，具体语法参考：https://godoc.org/github.com/go-playground/validator
-</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> gloryHttpReq <span style="color:#008000;font-weight:bold">struct</span> {
+<span style="color:#008000;font-weight:bold">type</span> gloryHttpReq <span style="color:#008000;font-weight:bold">struct</span> {
 	Input    []<span style="color:#b00040">int</span>  <span style="color:#ba2121">`schema:&#34;input&#34; validate:&#34;required&#34;`</span> <span style="color:#408080;font-style:italic">// query参数使用schema 标签
 </span><span style="color:#408080;font-style:italic"></span>	BodyStr  <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str&#34;`</span>                    <span style="color:#408080;font-style:italic">// body 参数使用json标签
 </span><span style="color:#408080;font-style:italic"></span>	BodyStr2 <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str_2&#34;`</span>                  <span style="color:#408080;font-style:italic">// body 参数使用json标签
-</span><span style="color:#408080;font-style:italic"></span>
-}
+</span><span style="color:#408080;font-style:italic"></span>}
 
 <span style="color:#408080;font-style:italic">// 定义 response 结构体
 </span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> gloryHttpRsp <span style="color:#008000;font-weight:bold">struct</span> {
@@ -449,7 +300,7 @@ consumer :
 	req <span style="color:#666">:=</span> controller.Req.(<span style="color:#666">*</span>gloryHttpReq)
 	rsp <span style="color:#666">:=</span> controller.Rsp.(<span style="color:#666">*</span>gloryHttpRsp)
 	log.<span style="color:#00f">Info</span>(<span style="color:#ba2121">&#34;req = &#34;</span>, <span style="color:#666">*</span>req)                                                                     <span style="color:#408080;font-style:italic">// 打印query和body参数
-</span><span style="color:#408080;font-style:italic"></span>	log.<span style="color:#00f">Info</span>(<span style="color:#ba2121">&#34;hello = &#34;</span>, controller.VarsMap[<span style="color:#ba2121">&#34;hello&#34;</span>], <span style="color:#ba2121">&#34;hello2 = &#34;</span>, controller.VarsMap[<span style="color:#ba2121">&#34;hello2&#34;</span>]) <span style="color:#408080;font-style:italic">// 打印path内变量
+</span><span style="color:#408080;font-style:italic"></span>	log.<span style="color:#00f">Info</span>(<span style="color:#ba2121">&#34;hello = &#34;</span>, controller.VarsMap[<span style="color:#ba2121">&#34;hello&#34;</span>], <span style="color:#ba2121">&#34; hello2 = &#34;</span>, controller.VarsMap[<span style="color:#ba2121">&#34;hello2&#34;</span>]) <span style="color:#408080;font-style:italic">// 打印path内变量
 </span><span style="color:#408080;font-style:italic"></span>	rsp.Output = req.Input[<span style="color:#666">0</span>] <span style="color:#666">+</span> <span style="color:#666">1</span>
 	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>
 }
@@ -458,8 +309,8 @@ consumer :
 	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
 	<span style="color:#408080;font-style:italic">// 与 yaml文件中的key保持一致
 </span><span style="color:#408080;font-style:italic"></span>	httpService <span style="color:#666">:=</span> service.<span style="color:#00f">NewHttpService</span>(<span style="color:#ba2121">&#34;httpDemo&#34;</span>)
-	<span style="color:#408080;font-style:italic">// 注册http服务注册：path、method、handler、bodySturcture、filter...
-</span><span style="color:#408080;font-style:italic"></span>	httpService.<span style="color:#00f">RegisterRouter</span>(<span style="color:#ba2121">&#34;/testwithfilter/{hello}/{hello2}&#34;</span>, testHandler, <span style="color:#666">&amp;</span>gloryHttpReq{}, <span style="color:#666">&amp;</span>gloryHttpRsp{}, <span style="color:#ba2121">&#34;POST&#34;</span>)
+	<span style="color:#408080;font-style:italic">// 注册http服务注册：path, handler, bodySturcture, method, filter...
+</span><span style="color:#408080;font-style:italic"></span>	httpService.<span style="color:#00f">RegisterRouter</span>(<span style="color:#ba2121">&#34;/test/{hello}/{hello2}&#34;</span>, testHandler, <span style="color:#666">&amp;</span>gloryHttpReq{}, <span style="color:#666">&amp;</span>gloryHttpRsp{}, <span style="color:#ba2121">&#34;POST&#34;</span>)
 	<span style="color:#408080;font-style:italic">// 注册service到glory服务
 </span><span style="color:#408080;font-style:italic"></span>	gloryServer.<span style="color:#00f">RegisterService</span>(httpService)
 	<span style="color:#408080;font-style:italic">// 开启glory server
@@ -467,13 +318,77 @@ consumer :
 	<span style="color:#408080;font-style:italic">// 使用postman测试
 </span><span style="color:#408080;font-style:italic"></span>}
 
-</code></pre></div><p>开启服务并测试</p>
-<p><img src="./img/1607870851747.png" alt="1607870851747"></p>
+</code></pre></div><p>拉取依赖开启服务并测试</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod init glory-grpc-http-demo 
+<span style="color:#008000">export</span> <span style="color:#19177c">GOPROXY</span><span style="color:#666">=</span><span style="color:#ba2121">&#34;https://goproxy.cn&#34;</span>
+go get ./...
+</code></pre></div><div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">$ go run .
+config center info: can<span style="">&#39;</span>t load config center config at config/config_center.yaml
+<span style="color:#666">[</span>negroni<span style="color:#666">]</span> listening on :8080
+</code></pre></div><p>服务开启成功,使用postman请求以下结构:</p>
+<p><img src="https://glory-go.github.io/image/httptest.png" alt="png"></p>
+<p>可观察到收到返回包output = 2, 在server端可以看到打印出的请求信息:</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell"><span style="color:#666">[</span>negroni<span style="color:#666">]</span> listening on :8080
+2021-06-09T15:13:41.960+0800    info    http-server/main.go:25  <span style="color:#19177c">req</span> <span style="color:#666">=</span> <span style="color:#666">{[</span>1<span style="color:#666">]</span> body_str value <span style="color:#666">}</span>
 
-  
+2021-06-09T15:13:41.976+0800    info    http-server/main.go:26  <span style="color:#19177c">hello</span> <span style="color:#666">=</span> hello1val <span style="color:#19177c">hello2</span> <span style="color:#666">=</span> hello2val
 
-  
+<span style="color:#666">[</span>negroni<span style="color:#666">]</span> 2021-06-09T15:13:41+08:00 | <span style="color:#666">200</span> |      17.3631ms | localhost:8080 | POST /test/hello1val/hello2val
+</code></pre></div><h3 id="22-运行一个简单的websocket-server">2.2 运行一个简单的websocket server</h3>
+<p>与上述http server的配置文件完全相同</p>
+<p>service启动时使用 RegisterWSRouter 接口, 并注册对应hansler即可</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">package</span> main
 
+<span style="color:#008000;font-weight:bold">import</span> (
+	<span style="color:#ba2121">&#34;github.com/glory-go/glory/glory&#34;</span>
+	ghttp <span style="color:#ba2121">&#34;github.com/glory-go/glory/http&#34;</span>
+	_ <span style="color:#ba2121">&#34;github.com/glory-go/glory/registry/redis&#34;</span>
+	<span style="color:#ba2121">&#34;github.com/glory-go/glory/service&#34;</span>
+)
+
+<span style="color:#008000;font-weight:bold">type</span> gloryWSReq <span style="color:#008000;font-weight:bold">struct</span> {
+	BodyStr  <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str&#34;`</span>   <span style="color:#408080;font-style:italic">// body 参数使用json标签
+</span><span style="color:#408080;font-style:italic"></span>	BodyStr2 <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str_2&#34;`</span> <span style="color:#408080;font-style:italic">// body 参数使用json标签
+</span><span style="color:#408080;font-style:italic"></span>}
+
+<span style="color:#008000;font-weight:bold">type</span> gloryWSRsp <span style="color:#008000;font-weight:bold">struct</span> {
+	BodyStr  <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str&#34;`</span>   <span style="color:#408080;font-style:italic">// body 参数使用json标签
+</span><span style="color:#408080;font-style:italic"></span>	BodyStr2 <span style="color:#b00040">string</span> <span style="color:#ba2121">`json:&#34;body_str_2&#34;`</span> <span style="color:#408080;font-style:italic">// body 参数使用json标签
+</span><span style="color:#408080;font-style:italic"></span>}
+
+<span style="color:#408080;font-style:italic">// 自定义业务逻辑处理 handler
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">testWSHandler</span>(controller <span style="color:#666">*</span>ghttp.GRegisterWSController) {
+	req <span style="color:#666">:=</span> <span style="color:#666">&amp;</span>gloryWSReq{}
+	rsp <span style="color:#666">:=</span> <span style="color:#666">&amp;</span>gloryWSRsp{}
+	controller.WSConn.<span style="color:#00f">ReadJSON</span>(req)
+	<span style="color:#408080;font-style:italic">/*
+</span><span style="color:#408080;font-style:italic">		your code
+</span><span style="color:#408080;font-style:italic">	*/</span>
+	controller.WSConn.<span style="color:#00f">WriteJSON</span>(rsp)
+}
+
+<span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
+	httpService <span style="color:#666">:=</span> service.<span style="color:#00f">NewHttpService</span>(<span style="color:#ba2121">&#34;httpDemo&#34;</span>)
+	httpService.<span style="color:#00f">RegisterWSRouter</span>(<span style="color:#ba2121">&#34;/test/{hello}/{hello2}&#34;</span>, testWSHandler)
+	gloryServer.<span style="color:#00f">RegisterService</span>(httpService)
+	gloryServer.<span style="color:#00f">Run</span>()
+}
+
+</code></pre></div><h3 id="31-关于配置文件">3.1 关于配置文件</h3>
+<p>框架默认使用 &ldquo;./config/glory.yaml&quot;作为配置文件</p>
+<ul>
+<li>
+<p>如果您希望通过配置中心读取配置,请参考示例// todo</p>
+</li>
+<li>
+<p>如果您希望修改配置路径,或者通过IDE启动项目,设置修改环境变量 GLORY_CONFIG_PATH=&ldquo;您的glory.yaml文件路径&rdquo;</p>
+</li>
+<li>
+<p>如果您希望根据环境区分配置,请参考示例// todo</p>
+</li>
+</ul>
+<p>下一篇: <a href="https://glory-go.github.io/samples/">示例说明</a></p>
 
 
     <footer class="site-footer">
