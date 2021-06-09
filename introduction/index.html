@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在微服务场景下使用gRPC进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。
+Glory具有以下功能：
+  通信协议：Glory框架提供gRPC（client端和server端）、HTTP（server端）、Websocket（server端）脚手架，你可以通过几行配置和几行代码快速开启多个gRPC或HTTP服务。
+  配置：Glory框架提供统一化的配置服务，您只需要在main文件同级目录config文件夹下定义glory.yaml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。
+您也可以选择从nacos 配置中心拉取当前服务所需配置。
+  日志：Glory框架提供日志支持，您可以在配置文件中定义自己需要的日志记录方式。支持命令行、文件、远程（基于elastic、阿里云sls）的日志收集方式。
+  链路追踪：glory框架提供适配于 gRPC 的链路追踪服务，你可以选择将服务调用链路上报至本地jaeger或阿里云链路追踪平台进行监控和错误追溯。
+  数据上报：glory框架提供基于Promethus的数据上报服务，你可以在配置文件中定义自己需要的数据上报方式，同时支持基于promethus-pushgateway的推模式数据上报。
+  第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。
+  服务治理：Glory框架提供基于K8s、Nacos的服务发现机制，可以在k8s集群中自动进行Glory-gRPC服务实例的注册、发现和负载均衡。
+  下一章：快速开始">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>总体介绍 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+      
+      
+      
+      
+      <a href="/about/" class="btn">联系我们</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>总体介绍</h1>
+  <p>Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在<strong>微服务场景下</strong>使用<strong>gRPC</strong>进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。</p>
+<p>Glory具有以下功能：</p>
+<ul>
+<li>
+<p>通信协议：Glory框架提供gRPC（client端和server端）、HTTP（server端）、Websocket（server端）<strong>脚手架</strong>，你可以通过<strong>几行配置和几行代码</strong>快速开启多个gRPC或HTTP服务。</p>
+</li>
+<li>
+<p>配置：Glory框架提供<strong>统一化的配置服务</strong>，您只需要在main文件同级目录config文件夹下定义glory.yaml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。</p>
+<p>您也可以选择从nacos <strong>配置中心拉取</strong>当前服务所需配置。</p>
+</li>
+<li>
+<p>日志：Glory框架提供<strong>日志支持</strong>，您可以在配置文件中定义自己需要的日志记录方式。支持命令行、文件、远程（基于elastic、阿里云sls）的日志收集方式。</p>
+</li>
+<li>
+<p>链路追踪：glory框架提供适配于 <strong>gRPC 的链路追踪</strong>服务，你可以选择将服务调用链路上报至本地jaeger或阿里云链路追踪平台进行监控和错误追溯。</p>
+</li>
+<li>
+<p>数据上报：glory框架提供<strong>基于Promethus的数据上报</strong>服务，你可以在配置文件中定义自己需要的数据上报方式，同时支持基于promethus-pushgateway的推模式数据上报。</p>
+</li>
+<li>
+<p>第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。</p>
+</li>
+<li>
+<p>服务治理：Glory框架提供基于K8s、Nacos的服务发现机制，可以在<strong>k8s集群中自动进行Glory-gRPC服务实例的注册、发现和负载均衡。</strong></p>
+</li>
+</ul>
+<p><strong>下一章：<a href="https://glory-go.github.io/quickstart/">快速开始</a></strong></p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    Made with <a href="https://gohugo.io/">Hugo</a>. Themed by <a href="https://github.com/zwbetz-gh/cayman-hugo-theme">Cayman</a>. Deployed to <a href="https://www.netlify.com/">Netlify</a>.
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>
