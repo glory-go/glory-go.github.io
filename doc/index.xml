@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>请点击快速开始页面 on Hello Glory Title</title>
-    <link>https://glory-go.github.io/</link>
-    <description>Recent content in 请点击快速开始页面 on Hello Glory Title</description>
+    <title>Docs on Hello Glory Title</title>
+    <link>https://glory-go.github.io/doc/</link>
+    <description>Recent content in Docs on Hello Glory Title</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 08 Jun 2021 23:36:08 +0800</lastBuildDate><atom:link href="https://glory-go.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 08 Jun 2021 23:36:08 +0800</lastBuildDate><atom:link href="https://glory-go.github.io/doc/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>GOLORY 协议介绍和使用</title>
       <link>https://glory-go.github.io/doc/glory_protocol/</link>
@@ -126,62 +126,6 @@ err = invoker.Invoke(invokeCtx, &amp;amp;params) // params store protocol error 
  阿里云sls elastic    数据上报(基于 prometheus)
   链路追踪
  grpc - 链路追踪收集    数据库</description>
-    </item>
-    
-    <item>
-      <title>快速开始</title>
-      <link>https://glory-go.github.io/quickstart/</link>
-      <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
-      
-      <guid>https://glory-go.github.io/quickstart/</guid>
-      <description>在开始本章前，我们假定您熟悉 gRPC-go  的基础使用方法，以及 Go 语言语法。
-环境要求：bash &amp;amp;&amp;amp; go version &amp;gt;= go 1.11
-1. 带您开启一次gRPC调用 1.1 server 端   定义IDL (接口描述 .proto文件）：
-新建sever文件夹，作为server端项目的根目录
-server文件夹下新建helloworld.proto, 写入以下内容作为接口描述，该内容定义了一个接口名为Greeter，包含SayHello方法，以及请求参数HelloRequest 和返回参数HelloReply 的定义。
-syntax = &amp;#34;proto3&amp;#34;;option go_package = &amp;#34;glory/main&amp;#34;;package main;service Greeter { rpc SayHello (HelloRequest) returns (HelloReply) {}}message HelloRequest { string name = 1;}message HelloReply { string message = 1;}(可选）在当前目录下执行
-$ protoc --go_out=plugins=grpc:. *.proto
-会发现在同级目录下生成helloworld.pb.go文件
-如果您没有安装 protoc 和 protoc-gen-go 工具，上述命令将会报错。（或者因为您懒得敲命令）我们推荐您直接使用我们提供的在线pb生成工具，将上述代码拷贝入 grpc 编译器，手动将编译结果拷贝到同级目录的helloworld.pb.go文件内。
-  撰写配置文件</description>
-    </item>
-    
-    <item>
-      <title>总体介绍</title>
-      <link>https://glory-go.github.io/introduction/</link>
-      <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
-      
-      <guid>https://glory-go.github.io/introduction/</guid>
-      <description>Glory框架为一款Go语言的轻量级RPC框架，您可以使用它快速开发你的服务实例。如果您希望在微服务场景下使用gRPC进行网络通信，那么Glory会使您的开发、运维工作量减轻不少。
-Glory具有以下功能：
-  通信协议：Glory框架提供gRPC（client端和server端）、HTTP（server端）、Websocket（server端）脚手架，你可以通过几行配置和几行代码快速开启多个gRPC或HTTP服务。
-  配置：Glory框架提供统一化的配置服务，您只需要在main文件同级目录config文件夹下定义glory.yaml，在配置文件内按照约定格式写入配置信息，在引入框架后执行时，框架会自动读入配置文件，并开启所需服务。
-您也可以选择从nacos 配置中心拉取当前服务所需配置。
-  日志：Glory框架提供日志支持，您可以在配置文件中定义自己需要的日志记录方式。支持命令行、文件、远程（基于elastic、阿里云sls）的日志收集方式。
-  链路追踪：glory框架提供适配于 gRPC 的链路追踪服务，你可以选择将服务调用链路上报至本地jaeger或阿里云链路追踪平台进行监控和错误追溯。
-  数据上报：glory框架提供基于Promethus的数据上报服务，你可以在配置文件中定义自己需要的数据上报方式，同时支持基于promethus-pushgateway的推模式数据上报。
-  第三方工具常用sdk支持：glory框架提供mysql、redis、mongodb、rabbitmq等常见工具的sdk封装，开发者可以在配置中引入服务，使用框架提供的sdk进行快速开发。
-  服务治理：Glory框架提供基于K8s、Nacos的服务发现机制，可以在k8s集群中自动进行Glory-gRPC服务实例的注册、发现和负载均衡。
-  下一章：快速开始</description>
-    </item>
-    
-    <item>
-      <title>示例说明</title>
-      <link>https://glory-go.github.io/samples/</link>
-      <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
-      
-      <guid>https://glory-go.github.io/samples/</guid>
-      <description>samples</description>
-    </item>
-    
-    <item>
-      <title>统一化配置的实现</title>
-      <link>https://glory-go.github.io/contact_us/</link>
-      <pubDate>Tue, 08 Jun 2021 23:36:08 +0800</pubDate>
-      
-      <guid>https://glory-go.github.io/contact_us/</guid>
-      <description>请加入钉钉群：xxxxxx
-或联系作者 laurence@apache.org</description>
     </item>
     
     <item>

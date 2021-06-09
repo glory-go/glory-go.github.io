@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="1. 一般配置 # ide/classroom/children/goonline 分别代表对应组织# 默认为goonlineorg_name:ide# server_name 对应当前服务名# 默认是default_server_nameserver_name:log-demo-client# 日志配置log :&#34;console-log&#34;:log_type:consolelevel:debug# 指标配置！metrics:# 可开启多个配置，这里有几个条目，对应开启几个metrics service# 每个metrics service 都有自己的jobname，默认为$(org_name).$(server_name)- client_port:8082metrics_type:prometheus_clientclient_path:/prometheusaction_type:pull- gateway_host:localhostconfig_source: file # 可通过config_source:env 尝试从环境读取gateway_port:9091action_type:pushmetrics_type:prometheus_client上述配置中：$(org_name)_$(server_name)
+默认为metrics配置列表中每个service的默认jobname,像这样 不指定jobname，会将数据依次上报到每个service，上报后的jobname字段为默认的。
+上报数据
+metrics.CounterInsc(&#34;in main&#34;)2. jobname指定服务上报 如果希望在代码中需要指定数据上报的service，就需要在配置中为特定service增加jobname字段
+注意！jobname字段不可出现除. - $ _ 之外的特殊字符，并且这几个都会变成 _ 因为prometheus只支持-
+metrics:# 无jobname service- gateway_host:PROMETHEUS_PUSH_GATEWAY_IPconfig_source:envgateway_port:PROMETHEUS_PUSH_GATEWAY_PORTaction_type:pushmetrics_type:prometheus_client# 指定 job_name: IDE.frontEndUpload- gateway_host:PROMETHEUS_PUSH_GATEWAY_IPconfig_source:envgateway_port:PROMETHEUS_PUSH_GATEWAY_PORTaction_type:pushmetrics_type:prometheus_clientjob_name:IDE.frontEndUpload# 指定 job_name: IDE.frontEndUpload- gateway_host:PROMETHEUS_PUSH_GATEWAY_IPconfig_source:envgateway_port:PROMETHEUS_PUSH_GATEWAY_PORTaction_type:pushmetrics_type:prometheus_clientjob_name:Classroom.frontEndUpload// 数据上报到jobname为IDE.frontEndUpload的service, 上报条目的jobname字段也为IDE.frontEndUpload metrics.GaugeSet(req.MetricsName, req.GaugeValue, &#34;IDE.frontEndUpload&#34;) // 数据上报到所有默认jobname（无配置jobname的service), 上报条目的jobname字段为$(org_name).$(server_name) metrics.CounterInsc(HttpRetCode &#43; &#34;_&#34; &#43; strconv.Itoa(int(c.RspCode))) 3. 数据上报http中间件 目前已经集成至http/filter_impl
+// BasicHttpStatusMiddleware push count and retCode and pending time of this http to default metrics service func BasicHttpStatusMiddleware(c *ghttp.">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>metrics 服务端数据上报使用 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>metrics 服务端数据上报使用</h1>
+  <h3 id="1-一般配置">1. 一般配置</h3>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#408080;font-style:italic"># ide/classroom/children/goonline 分别代表对应组织</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 默认为goonline</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">org_name</span>:<span style="color:#bbb"> </span>ide<span style="color:#bbb">
+</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># server_name 对应当前服务名</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 默认是default_server_name</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">server_name</span>:<span style="color:#bbb"> </span>log-demo-client<span style="color:#bbb">
+</span><span style="color:#bbb"> 
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 日志配置</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">log </span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;console-log&#34;</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">log_type</span>:<span style="color:#bbb"> </span>console<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">level</span>:<span style="color:#bbb"> </span>debug<span style="color:#bbb">
+</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 指标配置！</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#008000;font-weight:bold">metrics</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 可开启多个配置，这里有几个条目，对应开启几个metrics service</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 每个metrics service 都有自己的jobname，默认为$(org_name).$(server_name)</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#008000;font-weight:bold">client_port</span>:<span style="color:#bbb"> </span><span style="color:#666">8082</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">metrics_type</span>:<span style="color:#bbb"> </span>prometheus_client<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">client_path</span>:<span style="color:#bbb"> </span>/prometheus<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">action_type</span>:<span style="color:#bbb"> </span>pull<span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#008000;font-weight:bold">gateway_host</span>:<span style="color:#bbb"> </span>localhost<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">config_source: file # 可通过config_source</span>:<span style="color:#bbb"> </span>env 尝试从环境读取<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">gateway_port</span>:<span style="color:#bbb"> </span><span style="color:#666">9091</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">action_type</span>:<span style="color:#bbb"> </span>push<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">metrics_type</span>:<span style="color:#bbb"> </span>prometheus_client<span style="color:#bbb">
+</span></code></pre></div><p>上述配置中：$(org_name)_$(server_name)<br>
+默认为metrics配置列表中每个service的默认jobname,像这样
+不指定jobname，会将数据依次上报到每个service，上报后的jobname字段为默认的。</p>
+<p>上报数据</p>
+<pre><code>metrics.CounterInsc(&quot;in main&quot;)
+</code></pre><h3 id="2-jobname指定服务上报">2. jobname指定服务上报</h3>
+<p>如果希望在代码中需要指定数据上报的service，就需要在配置中为特定service增加jobname字段</p>
+<p>注意！jobname字段不可出现除<code>.</code> <code>-</code> <code>$</code> <code>_</code> 之外的特殊字符，并且这几个都会变成 <code>_</code>
+因为prometheus只支持<code>-</code></p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">metrics</span>:<span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 无jobname service</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#008000;font-weight:bold">gateway_host</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_IP<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">config_source</span>:<span style="color:#bbb"> </span>env<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">gateway_port</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_PORT<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">action_type</span>:<span style="color:#bbb"> </span>push<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">metrics_type</span>:<span style="color:#bbb"> </span>prometheus_client<span style="color:#bbb">
+</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 指定 job_name: IDE.frontEndUpload</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#008000;font-weight:bold">gateway_host</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_IP<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">config_source</span>:<span style="color:#bbb"> </span>env<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">gateway_port</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_PORT<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">action_type</span>:<span style="color:#bbb"> </span>push<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">metrics_type</span>:<span style="color:#bbb"> </span>prometheus_client<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">job_name</span>:<span style="color:#bbb"> </span>IDE.frontEndUpload<span style="color:#bbb">
+</span><span style="color:#bbb">
+</span><span style="color:#bbb"></span><span style="color:#408080;font-style:italic"># 指定 job_name: IDE.frontEndUpload</span><span style="color:#bbb">
+</span><span style="color:#bbb">  </span>- <span style="color:#008000;font-weight:bold">gateway_host</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_IP<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">config_source</span>:<span style="color:#bbb"> </span>env<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">gateway_port</span>:<span style="color:#bbb"> </span>PROMETHEUS_PUSH_GATEWAY_PORT<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">action_type</span>:<span style="color:#bbb"> </span>push<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">metrics_type</span>:<span style="color:#bbb"> </span>prometheus_client<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">job_name</span>:<span style="color:#bbb"> </span>Classroom.frontEndUpload<span style="color:#bbb">
+</span></code></pre></div><div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// 数据上报到jobname为IDE.frontEndUpload的service, 上报条目的jobname字段也为IDE.frontEndUpload
+</span><span style="color:#408080;font-style:italic"></span>metrics.<span style="color:#00f">GaugeSet</span>(req.MetricsName, req.GaugeValue, <span style="color:#ba2121">&#34;IDE.frontEndUpload&#34;</span>)
+
+<span style="color:#408080;font-style:italic">// 数据上报到所有默认jobname（无配置jobname的service), 上报条目的jobname字段为$(org_name).$(server_name)
+</span><span style="color:#408080;font-style:italic"></span>metrics.<span style="color:#00f">CounterInsc</span>(HttpRetCode <span style="color:#666">+</span> <span style="color:#ba2121">&#34;_&#34;</span> <span style="color:#666">+</span> strconv.<span style="color:#00f">Itoa</span>(<span style="color:#008000">int</span>(c.RspCode)))
+</code></pre></div><h3 id="3-数据上报http中间件">3. 数据上报http中间件</h3>
+<p>目前已经集成至http/filter_impl</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// BasicHttpStatusMiddleware push count and retCode and pending time of this http to default metrics service
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">BasicHttpStatusMiddleware</span>(c <span style="color:#666">*</span>ghttp.GRegisterController, f ghttp.HandleFunc) (err <span style="color:#b00040">error</span>) {
+	currTime <span style="color:#666">:=</span> time.<span style="color:#00f">Now</span>()
+	err = <span style="color:#00f">f</span>(c)
+	expireTime <span style="color:#666">:=</span> time.<span style="color:#00f">Now</span>().<span style="color:#00f">Sub</span>(currTime)
+	metrics.<span style="color:#00f">GaugeSet</span>(HTTPRequestTimeGaugeName<span style="color:#666">+</span>c.<span style="color:#00f">Key</span>(), <span style="color:#008000">float64</span>(expireTime.<span style="color:#00f">Milliseconds</span>()))
+	metrics.<span style="color:#00f">CounterInsc</span>(HttpRetCode <span style="color:#666">+</span> c.<span style="color:#00f">Key</span>() <span style="color:#666">+</span> <span style="color:#ba2121">&#34;_&#34;</span> <span style="color:#666">+</span> strconv.<span style="color:#00f">Itoa</span>(<span style="color:#008000">int</span>(c.RspCode)))
+	metrics.<span style="color:#00f">CounterInsc</span>(HTTPQueryCountName <span style="color:#666">+</span> c.<span style="color:#00f">Key</span>())
+	<span style="color:#008000;font-weight:bold">return</span> err
+}
+</code></pre></div><p>可直接在开启http service 时引入，默认数据上报jobname=$(org_name)_$(server_name)</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

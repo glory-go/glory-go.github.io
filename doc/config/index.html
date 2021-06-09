@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="统一化配置的实现 1.1 配置文件选型 配置文件调研：
+java框架常见配置文件：xml
+nodejs框架常见配置文件：json
+golang框架常见配置文件：json（go-zero），yaml（dubbo-go、k8s）
+经过调研，使用yaml文件作为golang框架的配置文件应用较为广泛，并且go语言有解析yaml文件的专用库，yaml配置文件的编写和修改较为方便，支持多种常见结构和数据类型的定义，配置文件内容较为简洁。
+最终选择yaml格式作为glory框架的配置文件格式，就在下文称本框架的配置文件为glory.yaml。
+1.2 根据环境变量对配置文件的选择 这个是在本阶段最后，开发人员提出的需求，要求使用多个配置文件，通过环境变量的方式，对多种环境：dev、release、test环境进行区分。
+由于考虑到产品兼容性问题，将在之后针对这部分内容进行修改。
+思路为：配置加载之前，首先从环境变量中读入：GLORY_ENV
+ 如果存在环境变量，则读入glory_$GLROY_ENV.yaml配置文件 如果不存在，默认读入glory.yaml文件作为配置  从而达到针对多环境的动态兼容。
+1.3 配置读入灵活性设计  设计思路  由于GoOnline是基于k8s管理的微服务，在之前没有框架的时候，都是使用环境变量保存配置，为了兼容已有服务，我决定使用特定字段对同一级别的配置进行标注，被标注的配置会事先从配置文件中读入配置信息，再以读到的字段为key逐一尝试从环境变量读入，如果存在配置则替换。
+这样的策略可以保证和GoOnline已有服务配置的兼容。
+  实现方式
+  配置中增加config_source字段，供开发者选择是否触发上述兼容逻辑。
+以/config/service_config.go中的ServiceConfig结构体为例：
+type ServiceConfig struct { ConfigSource string `yaml:&#34;config_source&#34;` # mark Protocol string `yaml:&#34;protocol&#34;` RegistryKey string `yaml:&#34;registry_key&#34;` Port int `yaml:&#34;port&#34;` ServiceID string `yaml:&#34;service_id&#34;` } service_config配置是一个抽象的配置，里面针对provider端，可以配置开启服务的协议protocol， 选择注册中心时使用的registry_key注册中心名， 本地暴露的端口port，以及服务注册发现使用的唯一ID：service_id。
+除此之外，mark标注的字段起到了上述作用，在我的框架逻辑中，一旦发现这个字段为env, 则触发环境变量尝试读入逻辑。
+判断逻辑写在了/tools/toosl.go ReadFromEnvIfNeed函数中
+func ReadFromEnvIfNeed(rawConfig interface{}) error { rawVal := reflect.ValueOf(rawConfig) if rawVal.">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>统一化配置的实现 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>统一化配置的实现</h1>
+  <h2 id="统一化配置的实现">统一化配置的实现</h2>
+<h3 id="11-配置文件选型">1.1 配置文件选型</h3>
+<p>配置文件调研：</p>
+<p>java框架常见配置文件：xml</p>
+<p>nodejs框架常见配置文件：json</p>
+<p>golang框架常见配置文件：json（go-zero），yaml（dubbo-go、k8s）</p>
+<p>经过调研，使用yaml文件作为golang框架的配置文件应用较为广泛，并且go语言有解析yaml文件的专用库，yaml配置文件的编写和修改较为方便，支持多种常见结构和数据类型的定义，配置文件内容较为简洁。</p>
+<p>最终选择yaml格式作为glory框架的配置文件格式，就在下文称本框架的配置文件为glory.yaml。</p>
+<h3 id="12-根据环境变量对配置文件的选择">1.2 根据环境变量对配置文件的选择</h3>
+<p>这个是在本阶段最后，开发人员提出的需求，要求使用多个配置文件，通过环境变量的方式，对多种环境：dev、release、test环境进行区分。</p>
+<p>由于考虑到产品兼容性问题，将在之后针对这部分内容进行修改。</p>
+<p>思路为：配置加载之前，首先从环境变量中读入：GLORY_ENV</p>
+<ul>
+<li>如果存在环境变量，则读入glory_$GLROY_ENV.yaml配置文件</li>
+<li>如果不存在，默认读入glory.yaml文件作为配置</li>
+</ul>
+<p>从而达到针对多环境的动态兼容。</p>
+<h3 id="13-配置读入灵活性设计">1.3 配置读入灵活性设计</h3>
+<ul>
+<li>设计思路</li>
+</ul>
+<p>由于GoOnline是基于k8s管理的微服务，在之前没有框架的时候，都是使用环境变量保存配置，为了兼容已有服务，我决定使用特定字段对同一级别的配置进行标注，被标注的配置会事先从配置文件中读入配置信息，再以读到的字段为key逐一尝试从环境变量读入，如果存在配置则替换。</p>
+<p>这样的策略可以保证和GoOnline已有服务配置的兼容。</p>
+<ul>
+<li>
+<p>实现方式</p>
+<ol>
+<li>
+<p>配置中增加<code>config_source</code>字段，供开发者选择是否触发上述兼容逻辑。</p>
+<p>以/config/service_config.go中的ServiceConfig结构体为例：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">type</span> ServiceConfig <span style="color:#008000;font-weight:bold">struct</span> {
+	ConfigSource <span style="color:#b00040">string</span> <span style="color:#ba2121">`yaml:&#34;config_source&#34;`</span> <span style="">#</span> mark
+	Protocol     <span style="color:#b00040">string</span> <span style="color:#ba2121">`yaml:&#34;protocol&#34;`</span>
+	RegistryKey  <span style="color:#b00040">string</span> <span style="color:#ba2121">`yaml:&#34;registry_key&#34;`</span>
+	Port         <span style="color:#b00040">int</span>    <span style="color:#ba2121">`yaml:&#34;port&#34;`</span>
+	ServiceID    <span style="color:#b00040">string</span> <span style="color:#ba2121">`yaml:&#34;service_id&#34;`</span>
+}
+</code></pre></div><p>service_config配置是一个抽象的配置，里面针对provider端，可以配置开启服务的协议<code>protocol</code>， 选择注册中心时使用的<code>registry_key</code>注册中心名， 本地暴露的端口<code>port</code>，以及服务注册发现使用的唯一ID：<code>service_id</code>。</p>
+<p>除此之外，mark标注的字段起到了上述作用，在我的框架逻辑中，一旦发现这个字段为env, 则触发环境变量尝试读入逻辑。</p>
+<p>判断逻辑写在了/tools/toosl.go ReadFromEnvIfNeed函数中</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">ReadFromEnvIfNeed</span>(rawConfig <span style="color:#008000;font-weight:bold">interface</span>{}) <span style="color:#b00040">error</span> {
+	rawVal <span style="color:#666">:=</span> reflect.<span style="color:#00f">ValueOf</span>(rawConfig)
+	<span style="color:#008000;font-weight:bold">if</span> rawVal.<span style="color:#00f">Kind</span>() <span style="color:#666">!=</span> reflect.Ptr { <span style="color:#408080;font-style:italic">//保证是指针
+</span><span style="color:#408080;font-style:italic"></span>       log.<span style="color:#00f">Println</span>(<span style="color:#ba2121">&#34;ReadFromEnvIfNeed param rawConfig should be pointer to struct&#34;</span>)
+       <span style="color:#008000;font-weight:bold">return</span> errors.<span style="color:#00f">New</span>(<span style="color:#ba2121">&#34;input rawConfig kind invalid&#34;</span>)
+	}
+	val <span style="color:#666">:=</span> rawVal.<span style="color:#00f">Elem</span>()
+	typ <span style="color:#666">:=</span> reflect.<span style="color:#00f">TypeOf</span>(rawConfig).<span style="color:#00f">Elem</span>()
+	kd <span style="color:#666">:=</span> val.<span style="color:#00f">Kind</span>() <span style="color:#408080;font-style:italic">//获取到a对应的类别
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#008000;font-weight:bold">if</span> kd <span style="color:#666">!=</span> reflect.Struct {
+       log.<span style="color:#00f">Println</span>(<span style="color:#ba2121">&#34;ReadAllConfFromEnv expect struct but got &#34;</span>, kd)
+       <span style="color:#008000;font-weight:bold">return</span> errors.<span style="color:#00f">New</span>(<span style="color:#ba2121">&#34;ReadAllConfFromEnv expect struct&#34;</span>)
+	}
+
+	num <span style="color:#666">:=</span> val.<span style="color:#00f">NumField</span>()
+	<span style="color:#008000;font-weight:bold">for</span> i <span style="color:#666">:=</span> <span style="color:#666">0</span>; i &lt; num; i<span style="color:#666">++</span> {
+       tagVal <span style="color:#666">:=</span> typ.<span style="color:#00f">Field</span>(i).Tag.<span style="color:#00f">Get</span>(<span style="color:#ba2121">&#34;yaml&#34;</span>)
+       <span style="color:#008000;font-weight:bold">if</span> tagVal <span style="color:#666">==</span> <span style="color:#ba2121">&#34;config_source&#34;</span> {
+           val, ok <span style="color:#666">:=</span> val.<span style="color:#00f">Field</span>(i).<span style="color:#00f">Interface</span>().(<span style="color:#b00040">string</span>)
+           <span style="color:#008000;font-weight:bold">if</span> !ok {
+               <span style="color:#408080;font-style:italic">//不符合要求，直接跳过
+</span><span style="color:#408080;font-style:italic"></span>               log.<span style="color:#00f">Println</span>(<span style="color:#ba2121">&#34;yaml tag &#39;config_source&#39; type should be string&#34;</span>)
+               <span style="color:#008000;font-weight:bold">continue</span>
+           }
+           <span style="color:#008000;font-weight:bold">if</span> val <span style="color:#666">==</span> <span style="color:#ba2121">&#34;env&#34;</span> {
+               <span style="color:#408080;font-style:italic">//符合环境变量读入要求
+</span><span style="color:#408080;font-style:italic"></span>               <span style="color:#00f">readAllConfFromEnv</span>(rawConfig)
+               <span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>
+           }
+       }
+	}
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><p>可以看到，我应用了反射，针对特定字段进行判断，再针对需要环境读入的config调用readAllConfFromEnv函数</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// readAllConfFromEnv 提供从环境变量拉取的服务
+</span><span style="color:#408080;font-style:italic">// 对于传入的rawConfig结构所有yaml标签不为config_source 的字段，尝试从环境变量中拉取，如果拉取到则替换原有值
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">readAllConfFromEnv</span>(rawConfig <span style="color:#008000;font-weight:bold">interface</span>{}) {
+	val <span style="color:#666">:=</span> reflect.<span style="color:#00f">ValueOf</span>(rawConfig) <span style="color:#408080;font-style:italic">//获取reflect.Type类型
+</span><span style="color:#408080;font-style:italic"></span>	typ <span style="color:#666">:=</span> reflect.<span style="color:#00f">TypeOf</span>(rawConfig)
+	<span style="color:#408080;font-style:italic">//获取到该结构体有几个字段
+</span><span style="color:#408080;font-style:italic"></span>	num <span style="color:#666">:=</span> val.<span style="color:#00f">Elem</span>().<span style="color:#00f">NumField</span>()
+	<span style="color:#408080;font-style:italic">//遍历结构体的所有字段
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#008000;font-weight:bold">for</span> i <span style="color:#666">:=</span> <span style="color:#666">0</span>; i &lt; num; i<span style="color:#666">++</span> {
+       <span style="color:#408080;font-style:italic">//fmt.Printf(&#34;Field %d:值=%v\n&#34;, i, val.Elem().Field(i))
+</span><span style="color:#408080;font-style:italic"></span>       tagVal <span style="color:#666">:=</span> typ.<span style="color:#00f">Elem</span>().<span style="color:#00f">Field</span>(i).Tag.<span style="color:#00f">Get</span>(<span style="color:#ba2121">&#34;yaml&#34;</span>)
+       <span style="color:#408080;font-style:italic">//如果该字段有tag标签就显示，否则就不显示
+</span><span style="color:#408080;font-style:italic"></span>       <span style="color:#008000;font-weight:bold">if</span> envValue <span style="color:#666">:=</span> <span style="color:#00f">GetEnv</span>(val.<span style="color:#00f">Elem</span>().<span style="color:#00f">Field</span>(i).<span style="color:#00f">String</span>()); tagVal <span style="color:#666">!=</span> <span style="color:#ba2121">&#34;config_source&#34;</span> <span style="color:#666">&amp;&amp;</span> envValue <span style="color:#666">!=</span> <span style="color:#ba2121">&#34;&#34;</span> {
+           <span style="color:#408080;font-style:italic">// 非config字段，并且环境变量里面有定义
+</span><span style="color:#408080;font-style:italic"></span>           val.<span style="color:#00f">Elem</span>().<span style="color:#00f">Field</span>(i).<span style="color:#00f">SetString</span>(envValue)
+       }
+	}
+}
+
+</code></pre></div><p>根据上述实现，可以达到环境变量读入检查的兼容性需求。</p>
+</li>
+</ol>
+</li>
+</ul>
+<h3 id="14-中心化配置管理设计">1.4 中心化配置管理（设计）</h3>
+<p>在未来，当GoOnline有足够的资源维护一个配置中心例如nacos，可以将启动时根据服务ID从配置中心拉取特定环境配置的逻辑写入框架。</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

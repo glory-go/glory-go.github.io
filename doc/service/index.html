@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="grpc/http服务的封装 服务开启大致流程：
+glory服务端启动的大体流程为：根据上述/config/service_config.go中字段的描述，我们将服务端可以抽象为一个一个Service，这些Service在main函数执行时候，根据init阶段读入的配置文件和用户实现的代码，生成好对应的service实例，注册在中心化的Server上，再由gloryServer逐一启动各个实力化Service，从而使得server和每个Service之间实现解耦，增强框架的扩展性和可插拔性。
+服务客户端启动过程比服务端简单，只需要在init的时候，由框读入配置，在用户函数中直接调用框架提供的接口来根据配置初始化client，再经过必要的封住后在代码中调用client即可。
+由于同一协议的服务端和客户端是相对的，所以在本部分，将按照框架启动的先后顺序，穿插介绍客户端和服务端启动的操作。
+2.1 配置的读入  客户端  对于一个glory服务，如果存在主调其他服务的客户端，在yaml配置文件中应当存在如下配置例子：
+consumer:&#34;grpc-helloworld-demo&#34;: # 客户端Keyregistry_key:registryKey# 注册中心标识config_source:file# 配置文件读入方式service_id:GoOnline-IDE-gloryService# 注册服务名protocol:grpc# 协议名可看到，例子描述了一个grpc客户端，目前无需了解其他字段的意义。只需要关心协议名和客户端Key即可。协议名标注了本客户端所使用的协议，用于之后协议抽象时进行区分。客户端Key则用于在开发者书写的代码中，使用这个Key找到它对应的配置。
+将配置读入后，框架将配置保存在格式化的结构体内。
+ 服务端  同理，针对服务端也是如此
+provider:&#34;gloryGrpcService&#34;: # 服务端keyprotocol:grpcregistry_key:registryKeyservice_id:GoOnline-IDE-gloryServiceport:8080# 暴露端口将配置读入框架后，开始执行main函数。
+2.2 客户端/服务端的加载 以grpc服务举例
+  客户端grpc服务的启动
+func main() { client := grpc.NewGrpcClient(&#34;dev&#34;, &#34;grpc-helloworld-demo&#34;) greeterClient := NewGreeterClient(client.GetConn()) ... } 在用户代码main函数中，调用框架提供的借口，将特定环境、特定客户端key的服务建立起来，拿到grpc协议的client。NewGrpcClient中封装了针对根据配置对官方grpcclient的调用，从而拿到封装好的官方客户端的client。
+之后，根据特定协议的需求，进一步使用pb文件的NewGreeterClient函数，引入我们建立好链接的client，拿到封装好grpc协议的实例化client。
+在后面，就可以根据client直接调用业务函数了。
+  服务端grpc服务的启动
+func main() { gloryServer := glory.NewServer() gloryService := service.NewGrpcService(&#34;gloryGrpcService&#34;) } 首先生成上面提到的gloryServer，然后再新建一个抽象的service，在新建的过程中用到了之前提到的服务端Key，根据这个key框架可以找到目标配置，从而按照协议初始化一个服务端Service。
+  2.3 server端grpc服务的实例化、注册到服务上 服务端业务代码的实现：
+// server is used to implement helloworld.">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>Service | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>Service</h1>
+  <h2 id="grpchttp服务的封装">grpc/http服务的封装</h2>
+<p>服务开启大致流程：</p>
+<p>glory服务端启动的大体流程为：根据上述/config/service_config.go中字段的描述，我们将服务端可以抽象为一个一个Service，这些Service在main函数执行时候，根据init阶段读入的配置文件和用户实现的代码，生成好对应的service实例，注册在中心化的Server上，再由gloryServer逐一启动各个实力化Service，从而使得server和每个Service之间实现解耦，增强框架的扩展性和可插拔性。</p>
+<p>服务客户端启动过程比服务端简单，只需要在init的时候，由框读入配置，在用户函数中直接调用框架提供的接口来根据配置初始化client，再经过必要的封住后在代码中调用client即可。</p>
+<p>由于同一协议的服务端和客户端是相对的，所以在本部分，将按照框架启动的先后顺序，穿插介绍客户端和服务端启动的操作。</p>
+<h3 id="21-配置的读入">2.1 配置的读入</h3>
+<ul>
+<li>客户端</li>
+</ul>
+<p>对于一个glory服务，如果存在主调其他服务的客户端，在yaml配置文件中应当存在如下配置例子：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">consumer</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#008000;font-weight:bold">&#34;grpc-helloworld-demo&#34;: </span><span style="color:#408080;font-style:italic"># 客户端Key</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">registry_key</span>:<span style="color:#bbb"> </span>registryKey<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 注册中心标识</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">config_source</span>:<span style="color:#bbb"> </span>file<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 配置文件读入方式</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 注册服务名</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 协议名</span><span style="color:#bbb">
+</span></code></pre></div><p>可看到，例子描述了一个grpc客户端，目前无需了解其他字段的意义。只需要关心协议名和客户端Key即可。协议名标注了本客户端所使用的协议，用于之后协议抽象时进行区分。客户端Key则用于在开发者书写的代码中，使用这个Key找到它对应的配置。</p>
+<p>将配置读入后，框架将配置保存在格式化的结构体内。</p>
+<ul>
+<li>服务端</li>
+</ul>
+<p>同理，针对服务端也是如此</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">provider</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#008000;font-weight:bold">&#34;gloryGrpcService&#34;: </span><span style="color:#408080;font-style:italic"># 服务端key</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>grpc<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">registry_key</span>:<span style="color:#bbb"> </span>registryKey<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#666">8080</span><span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 暴露端口</span><span style="color:#bbb">
+</span></code></pre></div><p>将配置读入框架后，开始执行main函数。</p>
+<h3 id="22-客户端服务端的加载">2.2 客户端/服务端的加载</h3>
+<p>以grpc服务举例</p>
+<ul>
+<li>
+<p>客户端grpc服务的启动</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+	client <span style="color:#666">:=</span> grpc.<span style="color:#00f">NewGrpcClient</span>(<span style="color:#ba2121">&#34;dev&#34;</span>, <span style="color:#ba2121">&#34;grpc-helloworld-demo&#34;</span>)
+	greeterClient <span style="color:#666">:=</span> <span style="color:#00f">NewGreeterClient</span>(client.<span style="color:#00f">GetConn</span>())
+	<span style="color:#666">...</span>
+}
+</code></pre></div><p>在用户代码main函数中，调用框架提供的借口，将特定环境、特定客户端key的服务建立起来，拿到grpc协议的client。NewGrpcClient中封装了针对根据配置对官方grpcclient的调用，从而拿到封装好的官方客户端的client。</p>
+<p>之后，根据特定协议的需求，进一步使用pb文件的NewGreeterClient函数，引入我们建立好链接的client，拿到封装好grpc协议的实例化client。</p>
+<p>在后面，就可以根据client直接调用业务函数了。</p>
+</li>
+<li>
+<p>服务端grpc服务的启动</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
+	gloryService <span style="color:#666">:=</span> service.<span style="color:#00f">NewGrpcService</span>(<span style="color:#ba2121">&#34;gloryGrpcService&#34;</span>)
+}
+</code></pre></div><p>首先生成上面提到的gloryServer，然后再新建一个抽象的service，在新建的过程中用到了之前提到的服务端Key，根据这个key框架可以找到目标配置，从而按照协议初始化一个服务端Service。</p>
+</li>
+</ul>
+<h3 id="23-server端grpc服务的实例化注册到服务上">2.3 server端grpc服务的实例化、注册到服务上</h3>
+<p>服务端业务代码的实现：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// server is used to implement helloworld.GreeterServer.
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> server <span style="color:#008000;font-weight:bold">struct</span> {
+}
+
+<span style="color:#408080;font-style:italic">// SayHello implements helloworld.GreeterServer
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> (s <span style="color:#666">*</span>server) <span style="color:#00f">SayHello</span>(ctx context.Context, in <span style="color:#666">*</span>HelloRequest) (<span style="color:#666">*</span>HelloReply, <span style="color:#b00040">error</span>) {
+log.<span style="color:#00f">Printf</span>(<span style="color:#ba2121">&#34;Received: %v&#34;</span>, in.<span style="color:#00f">GetName</span>())
+<span style="color:#008000;font-weight:bold">return</span> <span style="color:#666">&amp;</span>HelloReply{Message: <span style="color:#ba2121">&#34;Hello &#34;</span> <span style="color:#666">+</span> in.<span style="color:#00f">GetName</span>()}, <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><p>由开发者撰写业务函数代码，封装到server 结构体内</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+<span style="color:#666">...</span>
+<span style="color:#00f">RegisterGreeterServer</span>(gloryService.<span style="color:#00f">GetGrpcServer</span>(), <span style="color:#666">&amp;</span>server{})
+gloryServer.<span style="color:#00f">RegisterService</span>(gloryService)
+gloryServer.<span style="color:#00f">Run</span>()
+}
+</code></pre></div><p>拿到了gloryService之后，按照grpc官方库的要求，在pb上注册好server链接，并传入实现结构。</p>
+<p>再将Service注册于server，最终启动框架server。启动时，会逐个启动所有注册在server上的servive。</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

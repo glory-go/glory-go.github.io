@@ -6,7 +6,16 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="generator" content="Hugo 0.83.1" />
   
-  <meta name="description" content="Posts">
+  <meta name="description" content="统一配置服务
+ 配置中心拉取    单个特定协议Service启动
+  开启grpc服务
+ grpc-server rpc-client    开启http服务
+ http-server  http filter链实现      Triple (dubbo3) 协议和网络模型接入
+    使用glory协议实现RPC
+ 服务注册发现  nacos k8s redis   负载均衡  round_robin random（后续支持）   集群策略    日志
+ 阿里云sls elastic    数据上报(基于 prometheus)
+  链路追踪
+ grpc - 链路追踪收集    数据库">
   <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
   
@@ -23,7 +32,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
 
-  <title>Posts | Hello Glory Title</title>
+  <title>开发文档 | Hello Glory Title</title>
 </head>
 
 <body>
@@ -59,13 +68,13 @@
       
       
       
-      <a href="/doc/" class="btn">开发文档</a>
+      <a href="/doc/index/" class="btn">开发文档</a>
     
       
       
       
       
-      <a href="/about/" class="btn">联系我们</a>
+      <a href="/contact_us/" class="btn">联系我们</a>
     
       
       
@@ -78,19 +87,99 @@
 
   <section class="main-content">
     
-<h1>Posts</h1>
+  <h1>开发文档</h1>
+  <ul>
+<li>
+<p><a href="../config/">统一配置服务</a></p>
 <ul>
-
-
-  <li>
-    
-    2021-06-08
-    <a href="https://glory-go.github.io/post/doc/config/">
-      开发文档
-    </a>
-  </li>        
-
+<li>配置中心拉取</li>
 </ul>
+</li>
+<li>
+<p><a href="../service">单个特定协议Service启动</a></p>
+<ul>
+<li>
+<p>开启grpc服务</p>
+<ul>
+<li>grpc-server</li>
+<li>rpc-client</li>
+</ul>
+</li>
+<li>
+<p>开启http服务</p>
+<ul>
+<li>http-server
+<ul>
+<li><a href="../http_filter">http filter链实现</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Triple (dubbo3) 协议和网络模型接入</p>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="../glory_protocol">使用glory协议实现RPC</a></p>
+<ul>
+<li>服务注册发现
+<ul>
+<li>nacos</li>
+<li><a href="../k8s_servicedisc">k8s</a></li>
+<li>redis</li>
+</ul>
+</li>
+<li>负载均衡
+<ul>
+<li>round_robin</li>
+<li>random（后续支持）</li>
+</ul>
+</li>
+<li>集群策略</li>
+</ul>
+</li>
+<li>
+<p>日志</p>
+<ul>
+<li>阿里云sls</li>
+<li>elastic</li>
+</ul>
+</li>
+<li>
+<p><a href="../metrics">数据上报(基于 prometheus)</a></p>
+</li>
+<li>
+<p>链路追踪</p>
+<ul>
+<li><a href="../jaeger">grpc - 链路追踪收集</a></li>
+</ul>
+</li>
+<li>
+<p>数据库</p>
+<ul>
+<li>redis</li>
+<li>mysql</li>
+<li>mongodb</li>
+</ul>
+</li>
+<li>
+<p><a href="../errorcode">分层错误码</a></p>
+</li>
+<li>
+<p>oss 对象存储</p>
+<ul>
+<li>qiniu sdk</li>
+</ul>
+</li>
+<li>
+<p>消息</p>
+<ul>
+<li>rabbitmq</li>
+</ul>
+</li>
+</ul>
+
 
     <footer class="site-footer">
   <span class="site-footer-credits">

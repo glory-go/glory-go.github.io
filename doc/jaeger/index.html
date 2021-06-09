@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="1. Trace RPC追踪 在当今企业的生产环境中，经常会出现几十跳甚至上百跳的RPC调用链路，如果没有trace机制，一旦生产环境中出现问题，将会非常难以追溯，从而容易造成较大的生产事故。
+在trace的设计中，一般会在协议头部放置traceid，用来查找单次调用的每一跳，在每一个trace节点，都进行相应数据的上报，在数据收集平台即可查看到每一跳的服务以及状态，从而最快速度地定位问题。
+在glory框架中，结合GoOnline的项目落地情况，grpc 协议被广泛地应用。我选择在glory框架中针对 grpc 协议的暴露增加链路trace 追踪。并使用行业内通用解决方案jaeger进行数据收集和展示。最终可以实现将glory框架的调用链路展示在阿里云平台上。
+在此基础之上，我基于grpc interceptor 增加了针对rpc调用的Filter调用链，可以通过Filter接口的实现，为调用链中增加用户需要的过滤器。
+2. Glory 框架的 Grpc Trace 实现  配置文件  filter:&#34;grpc_filter&#34;:filter_name:&#34;jaeger&#34;aliyun_token_1:xxxxxxxaliyun_token_2:xxxxxxx只需要在glory.yaml 配置文件中，增加上述配置，即可将框架的grpc 调用引入trace filter。并将追溯结果上报至阿里云平台。
+ grpc 客户端和服务端 filter 的实现。  读取配置中的Filter key，尝试获取其对应的已经实现好的interceptor，    // getDialOption 根据filter返回对应的DialOption func getOptionFromFilter(filterKeys []string) []grpc.DialOption { intercepter, err := intercepter_impl.NewDefaultGRPCIntercepter(filterKeys) if err != nil { panic(err) } return []grpc.DialOption{ grpc.WithUnaryInterceptor(intercepter.ClientIntercepterHandle), } } 将所有Filterkey的实现（在本例子中只包括jaeger上报） 封装至 Chain filter 中，作为一个Filter抽象结构  func NewDefaultGRPCIntercepter(filterKeys []string) (filter.">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>调用链追踪和RPC Filter设计 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>调用链追踪和RPC Filter设计</h1>
+  <h4 id="1-trace-rpc追踪">1. Trace RPC追踪</h4>
+<p>在当今企业的生产环境中，经常会出现几十跳甚至上百跳的RPC调用链路，如果没有trace机制，一旦生产环境中出现问题，将会非常难以追溯，从而容易造成较大的生产事故。</p>
+<p>在trace的设计中，一般会在协议头部放置traceid，用来查找单次调用的每一跳，在每一个trace节点，都进行相应数据的上报，在数据收集平台即可查看到每一跳的服务以及状态，从而最快速度地定位问题。</p>
+<p>在glory框架中，结合GoOnline的项目落地情况，grpc 协议被广泛地应用。我选择在glory框架中针对 grpc 协议的暴露增加链路trace 追踪。并使用行业内通用解决方案jaeger进行数据收集和展示。最终可以实现将glory框架的调用链路展示在阿里云平台上。</p>
+<p>在此基础之上，我基于grpc interceptor 增加了针对rpc调用的Filter调用链，可以通过Filter接口的实现，为调用链中增加用户需要的过滤器。</p>
+<h4 id="2-glory-框架的-grpc-trace-实现">2. Glory 框架的 Grpc Trace 实现</h4>
+<ul>
+<li>配置文件</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">filter</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;grpc_filter&#34;</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">filter_name</span>:<span style="color:#bbb"> </span><span style="color:#ba2121">&#34;jaeger&#34;</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">aliyun_token_1</span>:<span style="color:#bbb"> </span>xxxxxxx<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">aliyun_token_2</span>:<span style="color:#bbb"> </span>xxxxxxx<span style="color:#bbb">
+</span></code></pre></div><p>只需要在glory.yaml 配置文件中，增加上述配置，即可将框架的grpc 调用引入trace filter。并将追溯结果上报至阿里云平台。</p>
+<ul>
+<li>grpc 客户端和服务端 filter 的实现。
+<ol>
+<li>读取配置中的Filter key，尝试获取其对应的已经实现好的interceptor，</li>
+</ol>
+</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// getDialOption 根据filter返回对应的DialOption
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">getOptionFromFilter</span>(filterKeys []<span style="color:#b00040">string</span>) []grpc.DialOption {
+   intercepter, err <span style="color:#666">:=</span> intercepter_impl.<span style="color:#00f">NewDefaultGRPCIntercepter</span>(filterKeys)
+   <span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+       <span style="color:#008000">panic</span>(err)
+   }
+
+   <span style="color:#008000;font-weight:bold">return</span> []grpc.DialOption{
+       grpc.<span style="color:#00f">WithUnaryInterceptor</span>(intercepter.ClientIntercepterHandle),
+   }
+}
+</code></pre></div><ol start="2">
+<li>将所有Filterkey的实现（在本例子中只包括jaeger上报） 封装至 Chain filter 中，作为一个Filter抽象结构</li>
+</ol>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">NewDefaultGRPCIntercepter</span>(filterKeys []<span style="color:#b00040">string</span>) (filter.Intercepter, <span style="color:#b00040">error</span>) {
+    <span style="color:#408080;font-style:italic">// 获取封装好所有filter 的chain，该chain本质上也是一个Filter 的实现。
+</span><span style="color:#408080;font-style:italic"></span>	chainFilter, err <span style="color:#666">:=</span> plugin.<span style="color:#00f">GetFilter</span>(<span style="color:#ba2121">&#34;chain&#34;</span>, <span style="color:#666">&amp;</span>config.FilterConfig{
+		SubFiltersKey: filterKeys, <span style="color:#408080;font-style:italic">// filter Keys
+</span><span style="color:#408080;font-style:italic"></span>	})
+	<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+		log.<span style="color:#00f">Errorf</span>(<span style="color:#ba2121">&#34;new default grpc intercepter error = %v\n&#34;</span>, err)
+		<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>, err
+	}
+    <span style="color:#408080;font-style:italic">// 将当前filter 封装至 grpc interceptor接口中，用于直接交给grpc进行操作。
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#666">&amp;</span>defaultIntercepter{
+		chainFilter: chainFilter,
+	}, <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><ol start="3">
+<li>
+<p>Jaeger Filter 的构造过程，根据配置构造出tracer，实现ServeHandle和ClientHandle两个接口函数。在实现的过程中将tracer的逻辑实现出来即可。</p>
+<p>具体Filter Chain的构造过程实现将在下一部分展示。</p>
+</li>
+</ol>
+<ul>
+<li>构造tracer</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">conf, err <span style="color:#666">:=</span> jaegerFilter.<span style="color:#00f">setup</span>(filterConfig)
+<span style="color:#408080;font-style:italic">// ...
+</span><span style="color:#408080;font-style:italic"></span>jaegerFilter.tracer, _, err = jaegerFilter.<span style="color:#00f">newJaegerTracer</span>(conf)
+</code></pre></div><ul>
+<li>实现ClientHandle接口的主要trace逻辑：</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// 通过构造好的tracer 生成trace span
+</span><span style="color:#408080;font-style:italic"></span>span <span style="color:#666">:=</span> j.tracer.<span style="color:#00f">StartSpan</span>(
+     method,
+     opentracing.<span style="color:#00f">ChildOf</span>(parentCtx),
+     opentracing.Tag{Key: <span style="color:#008000">string</span>(ext.Component), Value: <span style="color:#ba2121">&#34;gRPC&#34;</span>},
+     ext.SpanKindRPCClient,
+ )
+<span style="color:#008000;font-weight:bold">defer</span> span.<span style="color:#00f">Finish</span>()
+<span style="color:#408080;font-style:italic">// 获取jaeger 上下文
+</span><span style="color:#408080;font-style:italic"></span>sc, ok <span style="color:#666">:=</span> span.<span style="color:#00f">Context</span>().(jaeger.SpanContext)
+<span style="color:#408080;font-style:italic">/*
+</span><span style="color:#408080;font-style:italic">...
+</span><span style="color:#408080;font-style:italic">*/</span>
+mdWriter <span style="color:#666">:=</span> MDReaderWriter{md}
+err <span style="color:#666">:=</span> j.tracer.<span style="color:#00f">Inject</span>(span.<span style="color:#00f">Context</span>(), opentracing.TextMap, mdWriter)
+<span style="color:#408080;font-style:italic">// 将trace 相关数据写入context.Context 结构，例如traceid。
+</span><span style="color:#408080;font-style:italic"></span>newCtx <span style="color:#666">:=</span> metadata.<span style="color:#00f">NewOutgoingContext</span>(ctx, md)
+
+<span style="color:#408080;font-style:italic">// 保证当前Filter存在下游filter，否则无法完成Filter链的调用
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">if</span> j.next <span style="color:#666">==</span> <span style="color:#008000;font-weight:bold">nil</span> {
+    log.<span style="color:#00f">Errorf</span>(<span style="color:#ba2121">&#34;err = %v&#34;</span>, filter.ErrNotSetNextFilter)
+    <span style="color:#008000;font-weight:bold">return</span> filter.ErrNotSetNextFilter
+}
+<span style="color:#408080;font-style:italic">// 调用next Filter，传入本Filter 生成好的context上下文，完成client端trace逻辑
+</span><span style="color:#408080;font-style:italic"></span>err = j.next.<span style="color:#00f">ClientHandle</span>(newCtx, method, req, reply, cc, invoker, opts<span style="color:#666">...</span>)
+</code></pre></div><p>可看到，在当前Filter中，只关心属于自己的trace 实现逻辑。由于Filter 链中所有Filter都实现了对应接口，所以完成trace逻辑后，直接调用下游。</p>
+<ul>
+<li>实现ServerHandle接口的主要trace逻辑：</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">spanContext, err <span style="color:#666">:=</span> j.tracer.<span style="color:#00f">Extract</span>(opentracing.TextMap, MDReaderWriter{md})
+<span style="color:#408080;font-style:italic">// 确保服务端拿到的上下文存在trace数据
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> <span style="color:#666">&amp;&amp;</span> err <span style="color:#666">!=</span> opentracing.ErrSpanContextNotFound {
+    log.<span style="color:#00f">Errorf</span>(<span style="color:#ba2121">&#34;JaegerError: extract from metadata err: %v&#34;</span>, err)
+} <span style="color:#008000;font-weight:bold">else</span> {
+    <span style="color:#408080;font-style:italic">// 生成新的span结构
+</span><span style="color:#408080;font-style:italic"></span>    span <span style="color:#666">:=</span> j.tracer.<span style="color:#00f">StartSpan</span>(
+        info.FullMethod,
+        ext.<span style="color:#00f">RPCServerOption</span>(spanContext),
+        opentracing.Tag{Key: <span style="color:#008000">string</span>(ext.Component), Value: <span style="color:#ba2121">&#34;gRPC&#34;</span>},
+        ext.SpanKindRPCServer,
+    )
+   <span style="color:#408080;font-style:italic">/*
+</span><span style="color:#408080;font-style:italic">   ...
+</span><span style="color:#408080;font-style:italic">   */</span>
+    <span style="color:#408080;font-style:italic">// 追加当前server端trace逻辑
+</span><span style="color:#408080;font-style:italic"></span>    ctx = opentracing.<span style="color:#00f">ContextWithSpan</span>(ctx, span)
+}
+<span style="color:#408080;font-style:italic">// 确保下游Filter调用链是完整的
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">if</span> j.next <span style="color:#666">==</span> <span style="color:#008000;font-weight:bold">nil</span> {
+    log.<span style="color:#00f">Errorf</span>(<span style="color:#ba2121">&#34;err = %v&#34;</span>, filter.ErrNotSetNextFilter)
+    <span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>, filter.ErrNotSetNextFilter
+}
+<span style="color:#408080;font-style:italic">// 将新构造的context 传入下游
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">return</span> j.next.<span style="color:#00f">ServerHandle</span>(ctx, req, info)
+</code></pre></div><p>Server端和client端同理，也是在原有上下文的基础上增加当前节点的trace逻辑，例如traceid的上报和链路上下文字段的追加，之后使用新的上下文。</p>
+<p>因此，如果引入glory框架的grpc服务，并且引入了对应的filter 实现，即可构造出一个filter 链，使得每次rpc调用的请求结构和返回结构，都需要经过一层层filter的执行，而在单个filter执行的过程中，会针对自己关心的部分，对请求和返回结构进行特定操作（比如上报tracceid、记录成功与否），而在用户（开发者）的角度，是无感的。</p>
+<p>而如果需要增加新的Filter需求，例如通过Prometheus上报的形式，记录所有请求的耗时，也可以实现对应的Filter，引入filter链即可，具有很强的可配置和可插拔性。</p>
+<ul>
+<li>
+<p>结果展示</p>
+<p>我开启三个RPC服务，其中一个服务jaeger-client作为客户端，会在一次RPC请求中通过调用链依次访问到另外三个服务：jaeger-server、jaeger-subserver、jaeger-subsubserver，从而来观察trace链路和耗时情况。</p>
+<p>经过服务的开启和调用，可以在数据平台上收集到如下链路展示。</p>
+</li>
+</ul>
+<p><img src="../../img/trace.jpg" alt="">
+可注意到，当调用经过jaeger-server时，出现了很大的耗时（从server被调用到发起调用经历了很长时间）。则表明该服务具有较大的耗时，考虑瓶颈优化</p>
+<h3 id="3-glory-的-grpc-filter-调用链设计">3 Glory 的 grpc Filter 调用链设计</h3>
+<ul>
+<li>
+<p>Filter 接口</p>
+<p>参考grpc提供的Interceptor结构，我定义的Glory-grpc Filter 接口为：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// GRPCFilter is the normal grpc filter interface
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> GRPCFilter <span style="color:#008000;font-weight:bold">interface</span> {
+    <span style="color:#408080;font-style:italic">// 用于设置下一个Filter，链的最后一个Filter无需设置。
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#00f">SetNext</span>(filter GRPCFilter)
+
+    <span style="color:#408080;font-style:italic">// grpc服务端需要链式调用的函数
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#00f">ServerHandle</span>(ctx context.Context,
+      req <span style="color:#008000;font-weight:bold">interface</span>{},
+      info <span style="color:#666">*</span>grpc.UnaryServerInfo) (resp <span style="color:#008000;font-weight:bold">interface</span>{}, err <span style="color:#b00040">error</span>)
+
+    <span style="color:#408080;font-style:italic">// grpc客户端需要链式调用的寒素
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#00f">ClientHandle</span>(ctx context.Context,
+      method <span style="color:#b00040">string</span>,
+      req, reply <span style="color:#008000;font-weight:bold">interface</span>{},
+      cc <span style="color:#666">*</span>grpc.ClientConn,
+      invoker grpc.UnaryInvoker,
+      opts <span style="color:#666">...</span>grpc.CallOption) <span style="color:#b00040">error</span>
+}
+
+</code></pre></div><p>有了上述接口的约束，即可根据特定Filter在RPC过程中关心的点，针对入参/返回值进行操作，如日志打印、数据上报、失败率统计、请求延迟等。</p>
+</li>
+<li>
+<p>Filter Chain 的实现</p>
+<p>glory框架中的 Filter Chain是继承了Filter 接口。可以传入通过一组filter的配置进行初始化，初始化后将获得一整条Filter 链。</p>
+<p>初始化的过程大致分为两步：</p>
+<ol>
+<li>通过配置获取所有Filter 实例</li>
+<li>将所有Filter 实例串联起来形成调用链。</li>
+</ol>
+</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// NewChainFilter never setup failed. If it&#39;s subfilter setup with error, chain filter will jump it and setup next.
+</span><span style="color:#408080;font-style:italic">// The worst result is there is no sub filter successfully setup, and this chain is useless.
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">NewChainFilter</span>(filterConfig <span style="color:#666">*</span>config.FilterConfig) (filter.GRPCFilter, <span style="color:#b00040">error</span>) {
+	filterChain <span style="color:#666">:=</span> <span style="color:#008000">make</span>([]filter.GRPCFilter, <span style="color:#666">0</span>)
+	<span style="color:#008000;font-weight:bold">for</span> _, k <span style="color:#666">:=</span> <span style="color:#008000;font-weight:bold">range</span> filterConfig.SubFiltersKey {
+		filterConfig, ok <span style="color:#666">:=</span> config.GlobalServerConf.FilterConfigMap[k]
+		<span style="color:#008000;font-weight:bold">if</span> !ok {
+			log.<span style="color:#00f">Warnf</span>(<span style="color:#ba2121">&#34;filter key %s not defined in config file&#39;s filters block, this filter not loaded!&#34;</span>, k)
+			<span style="color:#008000;font-weight:bold">continue</span>
+		}
+        <span style="color:#408080;font-style:italic">// 根据当前Filter配置，从插件中生成当前实例化Filter
+</span><span style="color:#408080;font-style:italic"></span>		tempFilter, err <span style="color:#666">:=</span> plugin.<span style="color:#00f">GetFilter</span>(filterConfig.FilterName, filterConfig)
+		<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+			log.<span style="color:#00f">Warnf</span>(<span style="color:#ba2121">&#34;filter key %s setup error = %v&#34;</span>, err)
+			<span style="color:#008000;font-weight:bold">continue</span>
+		}
+        <span style="color:#408080;font-style:italic">// 加入当前链
+</span><span style="color:#408080;font-style:italic"></span>		filterChain = <span style="color:#008000">append</span>(filterChain, tempFilter)
+	}
+
+    <span style="color:#408080;font-style:italic">// 将链条串起来
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#008000;font-weight:bold">for</span> i, f <span style="color:#666">:=</span> <span style="color:#008000;font-weight:bold">range</span> filterChain {
+		<span style="color:#008000;font-weight:bold">if</span> i <span style="color:#666">==</span> <span style="color:#008000">len</span>(filterChain)<span style="color:#666">-</span><span style="color:#666">1</span> {
+			<span style="color:#008000;font-weight:bold">break</span>
+		}
+		f.<span style="color:#00f">SetNext</span>(filterChain[i<span style="color:#666">+</span><span style="color:#666">1</span>])
+	}
+
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#666">&amp;</span>ChainFilter{
+		chain: filterChain,
+	}, <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><ul>
+<li>
+<p>grpc接口Interceptor的适配</p>
+<p>由于grpc与glory的filter接口并不兼容，我在glory框架中，定义了拥有grpc 提供的两个Interceptor 函数的接口如下：</p>
+<pre><code>// Intercepter is the grpc invocation api, and is the entrance of glory filter
+type Intercepter interface {
+	ServerIntercepterHandle(ctx context.Context,
+      req interface{},
+      info *grpc.UnaryServerInfo,
+      handler grpc.UnaryHandler) (resp interface{}, err error)
+
+	ClientIntercepterHandle(ctx context.Context,
+      method string,
+      req, reply interface{},
+      cc *grpc.ClientConn,
+      invoker grpc.UnaryInvoker,
+      opts ...grpc.CallOption) error
+}
+
+
+</code></pre><p>可见，grpc的两个Interceptor 函数的入参中并不包含Interceptor函数本身，因此无法形成调用链扩展。这是我我在此基础之上引入Filter 的原因。有了Filter 和Interceptor接口，我只需要实现好一个包含glory框架Filter链的Interceptor结构，然后将其注入grpc的客户端和服务端。</p>
+<p>默认grpc Interceptor的实现</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// defaultIntercepter is default grpc intercepter, it calls chain_filter and it self is the final filter of grpc invocation filter procedure
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> defaultIntercepter <span style="color:#008000;font-weight:bold">struct</span> {
+	chainFilter filter.GRPCFilter
+	handler     grpc.UnaryHandler
+}
+
+</code></pre></div><p>defaultIntercepter 同时实现了Interceptor和Filter接口。他有一个自己的Filter链，以及负责真正执行业务代码的handler。在这它的调用过程中，会首先将请求通过Filter链执行，再将链的最后一个Filter指向自己，请求的最终会运行到自己实现Filter的函数中，完成整个调用。</p>
+<p>以Client端调用为例：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (j <span style="color:#666">*</span>defaultIntercepter) <span style="color:#00f">ClientIntercepterHandle</span>(ctx context.Context,
+	method <span style="color:#b00040">string</span>,
+	req, reply <span style="color:#008000;font-weight:bold">interface</span>{},
+	cc <span style="color:#666">*</span>grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
+	opts <span style="color:#666">...</span>grpc.CallOption) <span style="color:#b00040">error</span> {
+
+    <span style="color:#408080;font-style:italic">// 将自己作为Chain的next Filter
+</span><span style="color:#408080;font-style:italic"></span>	j.chainFilter.<span style="color:#00f">SetNext</span>(j)
+
+    <span style="color:#408080;font-style:italic">// 将请求传入chain，开始依次调用Filter 链，最终调用到自身实现的函数中，结束调用。
+</span><span style="color:#408080;font-style:italic"></span>	<span style="color:#008000;font-weight:bold">return</span> j.chainFilter.<span style="color:#00f">ClientHandle</span>(ctx, method, req, reply, cc, invoker, opts<span style="color:#666">...</span>)
+}
+</code></pre></div></li>
+</ul>
+<p>defaultIntercepter 的最后一次执行（由自己作为Filter链的最后一环）的实现：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (j <span style="color:#666">*</span>defaultIntercepter) <span style="color:#00f">ServerHandle</span>(ctx context.Context,
+   req <span style="color:#008000;font-weight:bold">interface</span>{},
+   info <span style="color:#666">*</span>grpc.UnaryServerInfo) (resp <span style="color:#008000;font-weight:bold">interface</span>{}, err <span style="color:#b00040">error</span>) {
+   <span style="color:#008000;font-weight:bold">return</span> j.<span style="color:#00f">handler</span>(ctx, req)
+}
+</code></pre></div><p>只需要执行handler，完成rpc调用即可，不需要关心其他逻辑。</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

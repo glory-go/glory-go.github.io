@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="[toc]
+1. glory 1.1 glory协议字段 我希望我的glory框架需要拥有自己的服务治理能力：服务发现、负载均衡、默认glory协议、hessian2序列化工具支持、流式rpc支持。
+因此我参考jsonrpc 2.0规范 设计了glory协议
+请求包、回包、错误码
+// RequestPackage is sent from client to server type RequestPackage struct { Header *Header // Header is glory header 	MethodName string // MethodName is method to invoke 	Params []interface{} // Params is param list } // ResponsePackage is sent from server to client type ResponsePackage struct { Header *Header // Header is glory header 	Result []interface{} // Result is response result list 	Error *Error // Error defined the response status } // Error is a field of rsp pkg type Error struct { Code int32 // Code shows glory error code 	Msg string // Msg shows error message } 针对glory协议头，它可以在日后的开发和完善中进行扩展，目前根据我的设计，拥有如下字段：">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>GOLORY 协议介绍和使用 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>GOLORY 协议介绍和使用</h1>
+  <p>[toc]</p>
+<h2 id="1-glory">1. glory</h2>
+<h3 id="11-glory协议字段">1.1 glory协议字段</h3>
+<p>我希望我的glory框架需要拥有自己的服务治理能力：服务发现、负载均衡、默认glory协议、hessian2序列化工具支持、流式rpc支持。</p>
+<p>因此我参考jsonrpc 2.0规范 设计了glory协议</p>
+<p>请求包、回包、错误码</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// RequestPackage is sent from client to server
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> RequestPackage <span style="color:#008000;font-weight:bold">struct</span> {
+	Header     <span style="color:#666">*</span>Header       <span style="color:#408080;font-style:italic">// Header is glory header
+</span><span style="color:#408080;font-style:italic"></span>	MethodName <span style="color:#b00040">string</span>        <span style="color:#408080;font-style:italic">// MethodName is method to invoke
+</span><span style="color:#408080;font-style:italic"></span>	Params     []<span style="color:#008000;font-weight:bold">interface</span>{} <span style="color:#408080;font-style:italic">// Params is param list
+</span><span style="color:#408080;font-style:italic"></span>}
+
+<span style="color:#408080;font-style:italic">// ResponsePackage is sent from server to client
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> ResponsePackage <span style="color:#008000;font-weight:bold">struct</span> {
+	Header <span style="color:#666">*</span>Header       <span style="color:#408080;font-style:italic">// Header is glory header
+</span><span style="color:#408080;font-style:italic"></span>	Result []<span style="color:#008000;font-weight:bold">interface</span>{} <span style="color:#408080;font-style:italic">// Result is response result list
+</span><span style="color:#408080;font-style:italic"></span>	Error  <span style="color:#666">*</span>Error        <span style="color:#408080;font-style:italic">// Error defined the response status
+</span><span style="color:#408080;font-style:italic"></span>}
+
+<span style="color:#408080;font-style:italic">// Error is a field of rsp pkg
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> Error <span style="color:#008000;font-weight:bold">struct</span> {
+	Code <span style="color:#b00040">int32</span>  <span style="color:#408080;font-style:italic">// Code shows glory error code
+</span><span style="color:#408080;font-style:italic"></span>	Msg  <span style="color:#b00040">string</span> <span style="color:#408080;font-style:italic">// Msg shows error message
+</span><span style="color:#408080;font-style:italic"></span>}
+
+</code></pre></div><p>针对glory协议头，它可以在日后的开发和完善中进行扩展，目前根据我的设计，拥有如下字段：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// Header is glory network header field,
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> Header <span style="color:#008000;font-weight:bold">struct</span> {
+	Version    <span style="color:#b00040">string</span> <span style="color:#408080;font-style:italic">// Version is glory version
+</span><span style="color:#408080;font-style:italic"></span>	TraceID    <span style="color:#b00040">string</span> <span style="color:#408080;font-style:italic">// TraceID is used to get all link way trace usage
+</span><span style="color:#408080;font-style:italic"></span>	PkgType    <span style="color:#b00040">uint64</span> <span style="color:#408080;font-style:italic">// PkgType define the package type
+</span><span style="color:#408080;font-style:italic"></span>	Seq        <span style="color:#b00040">uint64</span> <span style="color:#408080;font-style:italic">// Seq is the request seq number
+</span><span style="color:#408080;font-style:italic"></span>	ChanOffset <span style="color:#b00040">uint8</span> <span style="color:#408080;font-style:italic">// ChanOffset is used when stream channel send data, define which target Chan sends
+</span><span style="color:#408080;font-style:italic"></span>}
+</code></pre></div><p>其中，trace ID用于之后请求链路追踪，标识一次rpc调用的id。</p>
+<p>MethodName表示请求调用的方法名。</p>
+<p>PkgType目前包含以下类型：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">const</span> (
+    PingPkg           PkgType = <span style="color:#666">0</span>
+    PongPkg           PkgType = <span style="color:#666">1</span>
+    NormalRequestPkg  PkgType = <span style="color:#666">2</span>
+    NormalResponsePkg PkgType = <span style="color:#666">3</span>
+    StreamRequestPkg  PkgType = <span style="color:#666">4</span>
+    StreamSendPkg     PkgType = <span style="color:#666">5</span>
+    StreamRecvPkg     PkgType = <span style="color:#666">6</span>
+    StreamReadyPkg    PkgType = <span style="color:#666">7</span>
+    ErrorRspPkg       PkgType = <span style="color:#666">8</span>
+)
+</code></pre></div><p>用于标识当前RPC是流式RPC还是普通rpc，以及是请求包还是返回包。</p>
+<p>seq是请求序列号，用于pending请求，针对单个链接的多次请求服务进行区分，并且是目前支持的负载均衡算法roundrobin的依赖字段。</p>
+<p>ChanOffset字段为流式RPC设计，会在之后用于流式RPC的channe查找。</p>
+<p>以上glory协议基础字段可以基本保证rpc请求的完成。</p>
+<h3 id="12-hessian2序列化">1.2 Hessian2序列化</h3>
+<p>hessian2序列化极大程度保证了go-java的互通性。并且hessian2-go被应用于dubbo-go开源框架，并且保证和dubbo-java的连通性。</p>
+<p>但是由于已有的hessian2框架并不支持流式RPC调用，这也是我本次毕业设计最大的贡献：在hessian2和glory协议的基础之上，实现流式调用。</p>
+<p>就目前而言，我希望从unary（普通）RPC调用开始实现，之后再实现流式RPC接口。</p>
+<p>Hessian2用法可见：https://github.com/apache/dubbo-go-hessian2</p>
+<p>针对需要序列化的任何go struct，只需要定义好如下ID：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (Object) <span style="color:#00f">JavaClassName</span>() <span style="color:#b00040">string</span> {
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#ba2121">&#34;com.company.Circular&#34;</span>
+}
+</code></pre></div><p>再将其结构以POJO的格式注册到hessian2框架上：</p>
+<p><code>hessian.RegisterPOJO(&amp;GloryHeader{})</code></p>
+<p>即可直接通过Encode  API进行序列化和反序列化。无需预定义和编译IDL，并方便兼容java服务，十分方便。</p>
+<p>我选择hessian2而不是pb，还有一个重要原因是它支持动态生成Interface的注册和序列化，使得预编译型的框架支持称为可能：即可以通过框架编译出来的二进制文件和用户定义的配置文件，直接实现服务的调用，无需编写代码。</p>
+<p>很荣幸，这个feature是我提出并完成的：https://github.com/apache/dubbo-go-hessian2/pull/243</p>
+<h2 id="2-server端开启普通rpc服务过程实现">2. server端开启普通rpc服务过程实现</h2>
+<h3 id="21-配置文件定义暴露接口">2.1 配置文件定义暴露接口</h3>
+<p>glory.yaml</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">provider</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#008000;font-weight:bold">&#34;gloryService&#34;: </span><span style="color:#408080;font-style:italic"># 服务名</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>glory<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 协议名</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">registry_key</span>:<span style="color:#bbb"> </span>registryKey<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 注册中心名 （可选）</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 用于注册的服务发现ID（可选）</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#666">8080</span><span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 本地暴露端口</span><span style="color:#bbb">
+</span></code></pre></div><p>定义了如上配置，即可在服务main函数中，引入框架，进行provider端服务的实例话。</p>
+<h3 id="22-服务实例化和注册">2.2 服务实例化、和注册</h3>
+<ol>
+<li>开发者可以在代码中， 定义需要暴露服务的业务代码（示例）：</li>
+</ol>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">type</span> GloryProvider <span style="color:#008000;font-weight:bold">struct</span> {
+}
+
+<span style="color:#008000;font-weight:bold">func</span> (g GloryProvider) <span style="color:#00f">SayHello</span>(ctx context.Context, req <span style="color:#666">*</span>ReqBody, str2 <span style="color:#b00040">string</span>) (<span style="color:#666">*</span>RspBody, <span style="color:#b00040">error</span>) {
+	log.<span style="color:#00f">Info</span>(<span style="color:#ba2121">&#34;req = &#34;</span>, <span style="color:#666">*</span>req, <span style="color:#ba2121">&#34;+&#34;</span>, str2)
+	fmt.<span style="color:#00f">Println</span>(time.<span style="color:#00f">Now</span>().<span style="color:#00f">String</span>())
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#666">&amp;</span>RspBody{
+		Value:     req.Value,
+		SeqNum:    req.SeqNum <span style="color:#666">+</span> <span style="color:#666">1</span>,
+		TimeStamp: time.<span style="color:#00f">Now</span>(),
+	}, <span style="color:#008000;font-weight:bold">nil</span>
+}
+
+</code></pre></div><p>可以看到，GloryProvider实现了一个业务函数，传输过程包括ReqBody、RspBody两个自定义参数。</p>
+<ol start="2">
+<li>为了保证正确序列化，需要将两个参数注册到hessian2序列化框架内</li>
+</ol>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">init</span>() {
+	hessian.<span style="color:#00f">RegisterPOJO</span>(<span style="color:#666">&amp;</span>ReqBody{})
+	hessian.<span style="color:#00f">RegisterPOJO</span>(<span style="color:#666">&amp;</span>RspBody{})
+}
+</code></pre></div><ol start="3">
+<li>
+<p>服务注册</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+   gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
+   gloryService <span style="color:#666">:=</span> service.<span style="color:#00f">NewGloryService</span>(<span style="color:#ba2121">&#34;gloryService&#34;</span>, <span style="color:#666">&amp;</span>GloryProvider{}) <span style="color:#408080;font-style:italic">// 服务配置读入
+</span><span style="color:#408080;font-style:italic"></span>   gloryServer.<span style="color:#00f">RegisterService</span>(gloryService) <span style="color:#408080;font-style:italic">// 业务代码实例化
+</span><span style="color:#408080;font-style:italic"></span>   gloryServer.<span style="color:#00f">Run</span>() <span style="color:#408080;font-style:italic">// 服务启动
+</span><span style="color:#408080;font-style:italic"></span>}
+</code></pre></div></li>
+<li>
+<p>实例化invoker的构造</p>
+<p>invoker接口在常见开源框架内被应用的十分广泛，也是他们对于抽象化中间件实现的基础。</p>
+<p>invoker往往提供Invoker()方法，可以被用于封装网络逻辑、封装代理逻辑、封装集群策略、重试逻辑、链式调用等等。我设计的glory框架在服务注册的过程中，根据用户代码，构造出了实例化invoker，封装好用户业务逻辑代码，并通过框架暴露。</p>
+<p>在service/glory_service.go的gloryService: Run()函数中，可以看到通过用户代码构造invoker的起点。</p>
+<p>他构造了一个DefaultInvoker类型的invoker</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">type</span> DefaultInvoker <span style="color:#008000;font-weight:bold">struct</span> {
+	fValMap  <span style="color:#008000;font-weight:bold">map</span>[<span style="color:#b00040">string</span>]reflect.Value
+	fTypeMap <span style="color:#008000;font-weight:bold">map</span>[<span style="color:#b00040">string</span>]reflect.Type
+
+	<span style="color:#408080;font-style:italic">// streamMethod store methodName which is stream
+</span><span style="color:#408080;font-style:italic"></span>	streamMethod <span style="color:#008000;font-weight:bold">map</span>[<span style="color:#b00040">string</span>]<span style="color:#b00040">bool</span>
+
+	<span style="color:#408080;font-style:italic">// chanValMap store alive channel of stream function
+</span><span style="color:#408080;font-style:italic"></span>	chanValMap <span style="color:#008000;font-weight:bold">map</span>[<span style="color:#b00040">string</span>][]reflect.Value
+}
+</code></pre></div><p>这个结构可以抽象任何Provider实例化函数，将其method通过反射注册到invoker内部。</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">for</span> i <span style="color:#666">:=</span> <span style="color:#666">0</span>; i &lt; nums; i<span style="color:#666">++</span> {
+     invoker.<span style="color:#00f">setFunc</span>(typ.<span style="color:#00f">Method</span>(i).Name, val.<span style="color:#00f">Method</span>(i), typ.<span style="color:#00f">Method</span>(i).Type)
+	}
+</code></pre></div><p>最终得到invoker 作为server端provider的函数代理。</p>
+</li>
+</ol>
+<h3 id="23-服务开启">2.3 服务开启</h3>
+<p>通过上述介绍，拿到了封装业务代码的invoker，下面将其通过glory协议暴露给外部调用。</p>
+<p>在glory/glory_protocol.go的Export函数中，可以看到glory协议暴露上述invoker 的细节</p>
+<ol>
+<li>
+<p>接受TCPconn</p>
+</li>
+<li>
+<p>开启协程接受请求</p>
+</li>
+<li>
+<p>开启协程处理请求，并返回</p>
+<p>其中，会针对特定pkg，选择特定的handler进行处理</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">switch</span> common.<span style="color:#00f">PkgType</span>(pkg.Header.PkgType) {
+  <span style="color:#008000;font-weight:bold">case</span> common.NormalRequestPkg:
+  <span style="color:#008000;font-weight:bold">go</span> g.<span style="color:#00f">handleNormalRequest</span>(conn, pkg)
+  <span style="color:#008000;font-weight:bold">case</span> common.StreamRequestPkg:
+  <span style="color:#008000;font-weight:bold">go</span> g.<span style="color:#00f">handleStreamRequest</span>(ctx, conn, pkg)
+  <span style="color:#008000;font-weight:bold">case</span> common.StreamSendPkg:
+  <span style="color:#008000;font-weight:bold">go</span> g.<span style="color:#00f">handleStreamSendPkg</span>(pkg)
+  <span style="color:#008000;font-weight:bold">default</span>:
+  log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;recv unsupported pkg.Header.PkgType = &#34;</span>, pkg.Header.PkgType)
+}
+</code></pre></div><p>对于普通rpc调用，可看到如下处理：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (g <span style="color:#666">*</span>GloryProtocol) <span style="color:#00f">handleNormalRequest</span>(conn <span style="color:#666">*</span>net.TCPConn, pkg <span style="color:#666">*</span>GloryPackage) {
+	err <span style="color:#666">:=</span> <span style="color:#00f">callNormalInvoker</span>(g.invoker, pkg)
+	<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;callNormalInvoker err = &#34;</span>, err)
+     <span style="color:#408080;font-style:italic">//todo error rsp
+</span><span style="color:#408080;font-style:italic"></span>     <span style="color:#008000;font-weight:bold">return</span>
+	}
+	rspPkg <span style="color:#666">:=</span> <span style="color:#00f">newGloryPackage</span>(pkg.Header.TraceID, pkg.Header.MethodName, <span style="color:#008000">uint64</span>(common.NormalResponsePkg), pkg.Header.Seq)
+	rspPkg.Out = pkg.Out
+	<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">:=</span> rspPkg.<span style="color:#00f">sendToConn</span>(conn, g.gloryPkgHandler); err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;handleNormalRequest: rspPkg.sendToConn(conn, g.gloryPkgHandler) err:&#34;</span>, err)
+	}
+}
+</code></pre></div><p>通过调用上述封装好用户业务逻辑的invoker代理，传入glory 协议pkg，获取返回参数，写入了pkg.Out。</p>
+<p>通过pkg.Out构造返回glory协议包，请求序列号不变</p>
+<p>使用序列化工具，将返回包序列化，并写回链接。</p>
+<p>至此，server端可以成功处理一次glory协议请求。</p>
+</li>
+</ol>
+<h2 id="3-client端调用普通rpc服务过程">3. client端调用普通rpc服务过程</h2>
+<h3 id="31-配置文件定义主调接口">3.1 配置文件定义主调接口</h3>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">consumer </span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;gloryClient&#34;</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">registry_key</span>:<span style="color:#bbb"> </span>registryKey<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 注册中心名（可选）</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service_id</span>:<span style="color:#bbb"> </span>GoOnline-IDE-gloryService<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 服务发现ID（可选）</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">server_address</span>:<span style="color:#bbb"> </span><span style="color:#666">30.225.19.225</span>:<span style="color:#666">8080</span><span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 被调地址和端口 （可选）</span><span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>glory<span style="color:#bbb"> </span><span style="color:#408080;font-style:italic"># 协议名</span><span style="color:#bbb">
+</span></code></pre></div><p>在main函数中即可获取client的配置</p>
+<p><code>glory.NewGloryClient(context.Background(), &quot;gloryClient&quot;, &amp;gloryClient)</code></p>
+<h3 id="32-定义接口桩和传输结构体">3.2 定义接口桩和传输结构体</h3>
+<p>定义接口桩</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">type</span> GloryClient <span style="color:#008000;font-weight:bold">struct</span> {
+	SayHello <span style="color:#008000;font-weight:bold">func</span>(ctx context.Context, req <span style="color:#666">*</span>ReqBody, str2 <span style="color:#b00040">string</span>) (<span style="color:#666">*</span>RspBody, <span style="color:#b00040">error</span>)
+}
+</code></pre></div><p>和服务端保持一致，定义函数接口即可</p>
+<p>注册传输结构体</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">init</span>() {
+	hessian.<span style="color:#00f">RegisterPOJO</span>(<span style="color:#666">&amp;</span>ReqBody{})
+	hessian.<span style="color:#00f">RegisterPOJO</span>(<span style="color:#666">&amp;</span>RspBody{})
+}
+</code></pre></div><h3 id="33-rpc调用">3.3 RPC调用</h3>
+<p>在main函数中，通过框架根据上述接口桩实例化好调用逻辑，进而直接调用即可。</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">glory.<span style="color:#00f">NewGloryClient</span>(context.<span style="color:#00f">Background</span>(), <span style="color:#ba2121">&#34;gloryClient&#34;</span>, <span style="color:#666">&amp;</span>gloryClient)
+	<span style="color:#408080;font-style:italic">// test method
+</span><span style="color:#408080;font-style:italic"></span>rsp, err <span style="color:#666">:=</span> gloryClient.<span style="color:#00f">SayHello</span>(context.<span style="color:#00f">Background</span>(), <span style="color:#666">&amp;</span>ReqBody{
+				SeqNum: <span style="color:#666">1000</span>,
+				Value:  <span style="color:#ba2121">&#34;payload string&#34;</span>,
+				ID:     <span style="color:#ba2121">&#34;24234&#34;</span>,
+			}, <span style="color:#ba2121">&#34;req2&#34;</span>))
+</code></pre></div><p>在上述实例化客户端接口桩的部分，有值得探讨的细节，具体可见glory/client.go NewGloryClient()函数</p>
+<ol>
+<li>
+<p>配置读入</p>
+</li>
+<li>
+<p>服务发现</p>
+</li>
+<li>
+<p>根据服务发现的地址列表，生成对应的所有代理invoker</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">newGloryInvoker</span>(targetAddress <span style="color:#b00040">string</span>) (<span style="color:#666">*</span>GloryInvoker, <span style="color:#b00040">error</span>) {
+	<span style="color:#008000;font-weight:bold">var</span> conn <span style="color:#666">*</span>net.TCPConn
+	addr, err <span style="color:#666">:=</span> net.<span style="color:#00f">ResolveTCPAddr</span>(<span style="color:#ba2121">&#34;tcp&#34;</span>, targetAddress)
+	<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;new glory invoker:net.ResolveTCPAddr failed with err = &#34;</span>, err, <span style="color:#ba2121">&#34; address = &#34;</span>, targetAddress)
+     <span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>, err
+	}
+	log.<span style="color:#00f">Debugf</span>(<span style="color:#ba2121">&#34;dail addr = &#34;</span>, targetAddress)
+	conn, err = net.<span style="color:#00f">DialTCP</span>(<span style="color:#ba2121">&#34;tcp&#34;</span>, <span style="color:#008000;font-weight:bold">nil</span>, addr)
+	<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;new glory invoker:net.DialTCP failed with err = &#34;</span>, err, <span style="color:#ba2121">&#34; address = &#34;</span>, addr)
+     <span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>, err
+	}
+	newInvoker <span style="color:#666">:=</span> <span style="color:#666">&amp;</span>GloryInvoker{
+     addr:          common.<span style="color:#00f">NewAddress</span>(targetAddress),
+     targetAddress: targetAddress,
+     conn:          conn,
+     handler:       <span style="color:#00f">NewGloryPkgHandler</span>(),
+     pendingMap:    sync.Map{},
+	}
+	<span style="color:#008000;font-weight:bold">go</span> newInvoker.<span style="color:#00f">startRspListening</span>()
+	<span style="color:#008000;font-weight:bold">return</span> newInvoker, <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><p>在上述代码中，可见发起了tcp链接，并且开启返回监听。</p>
+</li>
+<li>
+<p>负载均衡封装了选择代理invoker的逻辑</p>
+<p>根据负载均衡策略， 将上述代理invoker列表中选择一个实例。并且发起调用</p>
+<p>每次调用都会选择一次，保证流量的均衡化</p>
+</li>
+<li>
+<p>Glory通过负载均衡invoker来调用远程的网络细节封装入代理函数，通过reflect写入接口桩。</p>
+</li>
+</ol>
+<h2 id="4-客户端负载均衡策略">4. 客户端负载均衡策略</h2>
+<p>在上述函数的第三步，即为负载均衡机制。我设计的负载均衡逻辑被封装为特定负载均衡策略的invoker内部</p>
+<p>以roundRobin负载均衡策略为例</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (rri <span style="color:#666">*</span>RoundRobinInvoker) <span style="color:#00f">Invoke</span>(ctx context.Context, in <span style="color:#666">*</span>common.Params) <span style="color:#b00040">error</span> {
+	in.Seq = <span style="color:#008000">uint64</span>(rri.seq.<span style="color:#00f">Inc</span>())
+	<span style="color:#008000;font-weight:bold">return</span> rri.invokerList[in.Seq<span style="color:#666">%</span><span style="color:#008000">uint64</span>(<span style="color:#008000">len</span>(rri.invokerList))].<span style="color:#00f">Invoke</span>(ctx, in)
+}
+</code></pre></div><p>拿到框架通用的Param参数，设置序列号，为了保证每次调用的序列号不同，采用线程安全的自增策略。</p>
+<p>通过取模操作，选择代理invokers列表之一的invoker进行远程调用。</p>
+<p>远程调用的过程被封装到代理invoker内：</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">func</span> (gi <span style="color:#666">*</span>GloryInvoker) <span style="color:#00f">Invoke</span>(ctx context.Context, param <span style="color:#666">*</span>common.Params) <span style="color:#b00040">error</span> {
+   gloryPkg <span style="color:#666">:=</span> <span style="color:#00f">newGloryPackage</span>(<span style="color:#ba2121">&#34;&#34;</span>, param.MethodName, <span style="color:#008000">uint64</span>(common.NormalRequestPkg), param.Seq)
+   gloryPkg.Ins = param.Ins
+   rspChannel <span style="color:#666">:=</span> <span style="color:#008000">make</span>(<span style="color:#008000;font-weight:bold">chan</span> <span style="color:#008000;font-weight:bold">interface</span>{})
+   gi.pendingMap.<span style="color:#00f">Store</span>(param.Seq, rspChannel)
+   <span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">:=</span> gloryPkg.<span style="color:#00f">sendToConn</span>(gi.conn, gi.handler); err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+      log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;Invoke: gloryPkg.sendToConn(gi.conn, gi.handler) err = &#34;</span>, err)
+      <span style="color:#008000;font-weight:bold">return</span> err
+   }
+   recvPkg <span style="color:#666">:=</span> <span style="color:#666">&lt;-</span>rspChannel
+   param.Out = recvPkg.(<span style="color:#666">*</span>GloryPackage).Out[<span style="color:#666">0</span>]
+   <span style="color:#008000">close</span>(rspChannel)
+   <span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>
+}
+</code></pre></div><p>可见，其将框架通用的param结构体转化为了glory协议包，通过序列化和pending写入，向服务端发起了一次请求。</p>
+<h2 id="5-超时机制">5. 超时机制</h2>
+<h3 id="51-超时机制实现">5.1 超时机制实现</h3>
+<p>在请求的过程中，可能因为网络延迟、server端下线等原因，出现请求超时的情况，针对这一情况，需要在客户端增加超时机制</p>
+<p>通过在请求发起后通过time.After建立超时触发器，使用select实现阻塞</p>
+<p>protocol/glory/invoker.go</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"> gi.pendingMap.<span style="color:#00f">Store</span>(param.Seq, rspChannel)
+<span style="color:#408080;font-style:italic">// close channel and delete from pending if necessary
+</span><span style="color:#408080;font-style:italic"></span> <span style="color:#008000;font-weight:bold">defer</span> <span style="color:#008000;font-weight:bold">func</span>() {
+     <span style="color:#008000">close</span>(rspChannel)
+     gi.pendingMap.<span style="color:#00f">Delete</span>(param.Seq)
+ }()
+<span style="color:#408080;font-style:italic">// call server
+</span><span style="color:#408080;font-style:italic"></span> <span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">:=</span> gloryPkg.<span style="color:#00f">sendToConn</span>(gi.gloryConnClient, gi.handler); err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;Invoke: gloryPkg.sendToConn(gi.conn, gi.handler) err = &#34;</span>, err)
+     <span style="color:#008000;font-weight:bold">return</span> GloryErrorConnErr
+ }
+<span style="color:#408080;font-style:italic">// start timeout caller 
+</span><span style="color:#408080;font-style:italic"></span> timeoutcaller <span style="color:#666">:=</span> time.<span style="color:#00f">After</span>(time.<span style="color:#00f">Duration</span>(gi.timeout) <span style="color:#666">*</span> time.Millisecond)
+
+ <span style="color:#008000;font-weight:bold">var</span> recvPkg <span style="color:#008000;font-weight:bold">interface</span>{}
+<span style="color:#408080;font-style:italic">// pending
+</span><span style="color:#408080;font-style:italic"></span> <span style="color:#008000;font-weight:bold">select</span> {
+ <span style="color:#008000;font-weight:bold">case</span> <span style="color:#666">&lt;-</span>timeoutcaller: <span style="color:#408080;font-style:italic">// timeout 
+</span><span style="color:#408080;font-style:italic"></span>     log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">`&#34;invoke timeout&#34;`</span>)
+     <span style="color:#008000;font-weight:bold">return</span> GloryErrorTimeoutErr <span style="color:#408080;font-style:italic">// reurn timeout err
+</span><span style="color:#408080;font-style:italic"></span> <span style="color:#008000;font-weight:bold">case</span> recvPkg = <span style="color:#666">&lt;-</span>rspChannel: <span style="color:#408080;font-style:italic">// recv rsp
+</span><span style="color:#408080;font-style:italic"></span> }
+</code></pre></div><p>可看到在一次rpc调用时，可以针对超时请求进行识别和处理。</p>
+<h3 id="52-用户配置">5.2 用户配置</h3>
+<p>Config/client_config.go</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">type</span> NetworkConfig <span style="color:#008000;font-weight:bold">struct</span> {
+ Timeout <span style="color:#b00040">int</span> <span style="color:#ba2121">`yaml:&#34;timeout&#34; default:&#34;3000&#34;`</span>
+}
+</code></pre></div><p>用户可通过配置timeout，实现特定超时的设定。</p>
+<h3 id="53-超时触发示例">5.3 超时触发示例</h3>
+<pre><code>get rsp = {SeqNum:0 Value: TimeStamp:0001-01-01 00:00:00 +0000 UTC}, err = Code: -1002, Msg: waiting for response time out
+----timeCost =  3.197914652s
+</code></pre><p>可看到以网络协议级别错误的形式展现。</p>
+<h2 id="6-高并发支持-粘包处理策略">6 高并发支持-粘包处理策略</h2>
+<p>为了保证高并发场景下不出现线程安全问题，我将临界区资源例如：请求序列号seq、pending队列，都使用了sync库。</p>
+<h3 id="61-高并发情景的数据粘包">6.1 高并发情景的数据粘包</h3>
+<p>我希望我的glory框架为稳定的，高并发线程安全的框架，但通过实验，我发现在高并发场景下，我在之前报告中所介绍的将请求write进tcp链接，再read出来的时候，会出现多个数据包粘在一起的情况，导致解包失败。</p>
+<p>参考grpc的设计，我选择在经过序列化的data到基础之上，增加帧头（4 byte）保存data length的方式，写入tcp链接，在服务端用相似的思路进行解包。</p>
+<h3 id="62-实现思路">6.2 实现思路</h3>
+<p>在glory协议的两端，增加打解包中间件，从而实现在序列化data之后的封装。</p>
+<p>protocol/glory/transfer.go</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// ReadFrame can split data frame by glory header
+</span><span style="color:#408080;font-style:italic">// length | data
+</span><span style="color:#408080;font-style:italic">// 4 byte | data
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> (cc <span style="color:#666">*</span>gloryConnClient) <span style="color:#00f">ReadFrame</span>() ([]<span style="color:#b00040">byte</span>, <span style="color:#b00040">error</span>) {
+	data <span style="color:#666">:=</span> <span style="color:#666">&lt;-</span>cc.frameQueue
+	<span style="color:#008000;font-weight:bold">if</span> data <span style="color:#666">==</span> <span style="color:#008000;font-weight:bold">nil</span> {
+		<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">nil</span>, errors.<span style="color:#00f">New</span>(<span style="color:#ba2121">&#34;read on closed client&#34;</span>)
+	}
+	<span style="color:#008000;font-weight:bold">return</span> data, <span style="color:#008000;font-weight:bold">nil</span>
+}
+
+<span style="color:#008000;font-weight:bold">func</span> (cc <span style="color:#666">*</span>gloryConnClient) <span style="color:#00f">WriteFrame</span>(data []<span style="color:#b00040">byte</span>) (<span style="color:#b00040">int</span>, <span style="color:#b00040">error</span>) {
+	<span style="color:#008000;font-weight:bold">return</span> cc.conn.<span style="color:#00f">Write</span>(<span style="color:#00f">data2Frame</span>(data)) <span style="color:#408080;font-style:italic">// data2Frame middleware function
+</span><span style="color:#408080;font-style:italic"></span>}
+
+<span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">frame2Datas</span>(fm []<span style="color:#b00040">byte</span>) [][]<span style="color:#b00040">byte</span> {
+	result <span style="color:#666">:=</span> <span style="color:#008000">make</span>([][]<span style="color:#b00040">byte</span>, <span style="color:#666">0</span>)
+	<span style="color:#008000;font-weight:bold">for</span> <span style="color:#008000">len</span>(fm) &gt; <span style="color:#666">0</span> {
+		h <span style="color:#666">:=</span> fm[:<span style="color:#666">4</span>]
+		length <span style="color:#666">:=</span> binary.BigEndian.<span style="color:#00f">Uint32</span>(h)
+		result = <span style="color:#008000">append</span>(result, fm[<span style="color:#666">4</span>:<span style="color:#666">4</span><span style="color:#666">+</span>length])
+		fm = fm[<span style="color:#666">4</span><span style="color:#666">+</span>length:]
+	}
+	<span style="color:#008000;font-weight:bold">return</span> result
+}
+
+<span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">data2Frame</span>(data []<span style="color:#b00040">byte</span>) []<span style="color:#b00040">byte</span> {
+	length <span style="color:#666">:=</span> <span style="color:#008000">uint32</span>(<span style="color:#008000">len</span>(data))
+	fm <span style="color:#666">:=</span> <span style="color:#008000">make</span>([]<span style="color:#b00040">byte</span>, <span style="color:#666">4</span><span style="color:#666">+</span>length)
+	binary.BigEndian.<span style="color:#00f">PutUint32</span>(fm, length)
+	<span style="color:#008000">copy</span>(fm[<span style="color:#666">4</span>:], data)
+	<span style="color:#008000;font-weight:bold">return</span> fm
+}
+</code></pre></div><p>从而可实现高并发场景的调用。</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

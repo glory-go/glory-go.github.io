@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="1. 服务注册发现原理 k8s将资源的所有字段保存在etcd分布式存储中，通过api server提供资源的修改接口。
+glory框架目前的实现是：将当前服务名作为label key、pod真实ip（并非nodeip）经过转义后作为label value。
+客户端服务发现：在当前命名空间下，筛选所有提供所需服务的pod真实ip，将拿到的ip列表做客户端负载均衡，进行调用
+2. 使用方法 example：可见：example/k8s
+运行服务首先保证本地存在k8s集群
+ 框架配置k8s注册方式：config/glory.yaml  registry:&#34;registryKey&#34;:service:k8s引入依赖
+import( _ &#34;github.com/glory-go/glory/registry/k8s&#34; )  运行示例 构造namespace  kubectl create namespace glory 分别在client和server下运行
+sudo sh build.sh 即可开启三个server和一个client，可通过docker dashboard 或者日志打印的方式，看到负载均衡调用的体现。
+3. 接下来的工作   目前服务发现采用客户端隔五秒轮询一次刷新的方法。在高qps场景下上下线会造成大量失败调用。较为严谨的解决办法是通过监听注册中心的修改事件，实时刷新客户端本地缓存️。目前尚未支持。
+高并发，海量请求场景下的服务注册和发现是一个值的深度探讨的话题，关于大面积停机，流量摘除，优雅下线等等，其中涉及到的策略有很多，欢迎一起讨论和本框架此模块协同共建。
+  转义部分之后考虑使用base64实现
+  ">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>K8S 服务发现支持 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>K8S 服务发现支持</h1>
+  <h3 id="1-服务注册发现原理">1. 服务注册发现原理</h3>
+<p>k8s将资源的所有字段保存在etcd分布式存储中，通过api server提供资源的修改接口。</p>
+<p>glory框架目前的实现是：将当前服务名作为label key、pod真实ip（并非nodeip）经过转义后作为label value。</p>
+<p>客户端服务发现：在当前命名空间下，筛选所有提供所需服务的pod真实ip，将拿到的ip列表做客户端负载均衡，进行调用</p>
+<h3 id="2-使用方法">2. 使用方法</h3>
+<p>example：可见：example/k8s</p>
+<p>运行服务首先保证本地存在k8s集群</p>
+<ul>
+<li>框架配置k8s注册方式：config/glory.yaml</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#008000;font-weight:bold">registry</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">  </span><span style="color:#ba2121">&#34;registryKey&#34;</span>:<span style="color:#bbb">
+</span><span style="color:#bbb">    </span><span style="color:#008000;font-weight:bold">service</span>:<span style="color:#bbb"> </span>k8s<span style="color:#bbb">
+</span></code></pre></div><p>引入依赖</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#008000;font-weight:bold">import</span>(
+       _ <span style="color:#ba2121">&#34;github.com/glory-go/glory/registry/k8s&#34;</span>
+)
+
+</code></pre></div><ul>
+<li>运行示例
+构造namespace</li>
+</ul>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">kubectl create namespace glory
+</code></pre></div><p>分别在client和server下运行</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-shell" data-lang="shell">sudo sh build.sh
+</code></pre></div><p>即可开启三个server和一个client，可通过docker dashboard 或者日志打印的方式，看到负载均衡调用的体现。</p>
+<h3 id="3-接下来的工作">3. 接下来的工作</h3>
+<ul>
+<li>
+<p>目前服务发现采用客户端隔五秒轮询一次刷新的方法。在高qps场景下上下线会造成大量失败调用。较为严谨的解决办法是通过监听注册中心的修改事件，实时刷新客户端本地缓存️。目前尚未支持。</p>
+<p>高并发，海量请求场景下的服务注册和发现是一个值的深度探讨的话题，关于大面积停机，流量摘除，优雅下线等等，其中涉及到的策略有很多，欢迎一起讨论和本框架此模块协同共建。</p>
+</li>
+<li>
+<p>转义部分之后考虑使用base64实现</p>
+</li>
+</ul>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>

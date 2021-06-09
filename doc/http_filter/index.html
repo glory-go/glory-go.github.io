@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Hugo 0.83.1" />
+  
+  <meta name="description" content="3. http-server filter 中间件的设计 http服务的启动过程与上述grpc十分类似，其中亮点是，根据业务需求，http-server封装了mux，在提供基础服务：路由、统一化http参数获取、自动打解包等等等基础上，增加了链式请求过滤器的支持。
+3.1 链式http请求过滤的实现 可在http/filter.go中看到针对过滤器和业务处理函数接口的定义
+// HandleFunc 业务处理函数接口 type HandleFunc func(controller *GRegisterController) (err error) // Filter 过滤器（拦截器），根据dispatch处理流程进行上下文拦截处理 type Filter func(controller *GRegisterController, f HandleFunc) (err error) // Chain 链式过滤器 type Chain []Filter 框架会为http服务分配一个filter链，即上述的Chain结构，
+// http处理函数 func getGloryHttpHandler(handler func(*GRegisterController) error, req, rsp interface{}, filters []Filter) func(w http.ResponseWriter, r *http.Request) { return func(w http.ResponseWriter, r *http.Request) { retPkg := rspImpPackage // recovery 	... // 创建针对当前接口的过滤器chain 	chain := Chain{} chain.">
+  <link rel="stylesheet" href="https://glory-go.github.io/css/normalize.css">
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+  
+  
+  
+  <link rel="stylesheet" href="https://glory-go.github.io/css/cayman.98b9cc4bd83f133a64abcec2cbbfe35204a9b44910d466a4643c96d6f4f95bf2.css">
+  
+  
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js" integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+
+  <title>http-server filter 中间件的设计 | Hello Glory Title</title>
+</head>
+
+<body>
+  <section class="page-header">
+  <h1 class="project-name">
+    Glory
+  </h1>
+  <h2 class="project-tagline">
+    A Golang Light RPC Framework
+  </h2>
+  <nav>
+    
+    
+      
+      
+      
+      
+      <a href="/introduction/" class="btn">总体介绍</a>
+    
+      
+      
+      
+      
+      <a href="/quickstart/" class="btn">快速开始</a>
+    
+      
+      
+      
+      
+      <a href="/samples/" class="btn">示例</a>
+    
+      
+      
+      
+      
+      <a href="/doc/index/" class="btn">开发文档</a>
+    
+      
+      
+      
+      
+      <a href="/contact_us/" class="btn">联系我们</a>
+    
+      
+      
+      
+      
+      <a href="/index.xml" class="btn">如何贡献</a>
+    
+  </nav>
+</section>
+
+  <section class="main-content">
+    
+  <h1>http-server filter 中间件的设计</h1>
+  <h2 id="3-http-server-filter-中间件的设计">3. http-server filter 中间件的设计</h2>
+<p>http服务的启动过程与上述grpc十分类似，其中亮点是，根据业务需求，http-server封装了mux，在提供基础服务：路由、统一化http参数获取、自动打解包等等等基础上，增加了链式请求过滤器的支持。</p>
+<h3 id="31-链式http请求过滤的实现">3.1 链式http请求过滤的实现</h3>
+<p>可在http/filter.go中看到针对过滤器和业务处理函数接口的定义</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// HandleFunc 业务处理函数接口
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> HandleFunc <span style="color:#008000;font-weight:bold">func</span>(controller <span style="color:#666">*</span>GRegisterController) (err <span style="color:#b00040">error</span>)
+
+<span style="color:#408080;font-style:italic">// Filter 过滤器（拦截器），根据dispatch处理流程进行上下文拦截处理
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> Filter <span style="color:#008000;font-weight:bold">func</span>(controller <span style="color:#666">*</span>GRegisterController, f HandleFunc) (err <span style="color:#b00040">error</span>)
+
+<span style="color:#408080;font-style:italic">// Chain 链式过滤器
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">type</span> Chain []Filter
+</code></pre></div><p>框架会为http服务分配一个filter链，即上述的Chain结构，</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// http处理函数
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">getGloryHttpHandler</span>(handler <span style="color:#008000;font-weight:bold">func</span>(<span style="color:#666">*</span>GRegisterController) <span style="color:#b00040">error</span>, req, rsp <span style="color:#008000;font-weight:bold">interface</span>{}, filters []Filter) <span style="color:#008000;font-weight:bold">func</span>(w http.ResponseWriter, r <span style="color:#666">*</span>http.Request) {
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">func</span>(w http.ResponseWriter, r <span style="color:#666">*</span>http.Request) {
+
+		retPkg <span style="color:#666">:=</span> rspImpPackage
+
+		<span style="color:#408080;font-style:italic">// recovery
+</span><span style="color:#408080;font-style:italic"></span>		<span style="color:#666">...</span>
+
+		<span style="color:#408080;font-style:italic">// 创建针对当前接口的过滤器chain
+</span><span style="color:#408080;font-style:italic"></span>		chain <span style="color:#666">:=</span> Chain{}
+		chain.<span style="color:#00f">AddFilter</span>(filters) <span style="color:#408080;font-style:italic">// 注册过滤器
+</span><span style="color:#408080;font-style:italic"></span>
+		tRegisterController <span style="color:#666">:=</span> GRegisterController{
+			Ctx: r.<span style="color:#00f">Context</span>(),
+			R:   r,
+		}
+		<span style="color:#408080;font-style:italic">// 处理 req
+</span><span style="color:#408080;font-style:italic"></span>		<span style="color:#408080;font-style:italic">// 处理 rsp
+</span><span style="color:#408080;font-style:italic"></span>			<span style="color:#408080;font-style:italic">// 执行业务函数
+</span><span style="color:#408080;font-style:italic"></span>		<span style="color:#008000;font-weight:bold">if</span> err <span style="color:#666">:=</span> chain.<span style="color:#00f">Handle</span>(<span style="color:#666">&amp;</span>tRegisterController, handler); err <span style="color:#666">!=</span> <span style="color:#008000;font-weight:bold">nil</span> {
+			retPkg.<span style="color:#00f">SetErrorPkg</span>(w, err)
+			<span style="color:#008000;font-weight:bold">return</span>
+		}
+		<span style="color:#408080;font-style:italic">// 最终回包
+</span><span style="color:#408080;font-style:italic"></span>    <span style="color:#666">...</span>
+		<span style="color:#008000;font-weight:bold">return</span>
+	}
+}
+
+</code></pre></div><p>可见，在上述函数中，将用户传入的自定义filter过滤函数，放在chain内形成filter链，再由chain调用Handle 函数，逐个执行链内所有filter，通过所有过滤的请求才最终被执行业务逻辑，否则按照filter逻辑返回。</p>
+<p>http/filter.go:  Handle函数内的实现</p>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">//多个Filter,递归执行
+</span><span style="color:#408080;font-style:italic"></span>	lastI <span style="color:#666">:=</span> n <span style="color:#666">-</span> <span style="color:#666">1</span>
+	<span style="color:#008000;font-weight:bold">return</span> <span style="color:#008000;font-weight:bold">func</span>(controller <span style="color:#666">*</span>GRegisterController, f HandleFunc) <span style="color:#b00040">error</span> {
+
+		<span style="color:#008000;font-weight:bold">var</span> (
+			chainFunc HandleFunc
+			curI      <span style="color:#b00040">int</span>
+		)
+		chainFunc = <span style="color:#008000;font-weight:bold">func</span>(controller <span style="color:#666">*</span>GRegisterController) <span style="color:#b00040">error</span> {
+			<span style="color:#008000;font-weight:bold">if</span> curI <span style="color:#666">==</span> lastI {
+				<span style="color:#008000;font-weight:bold">return</span> <span style="color:#00f">f</span>(controller)
+			}
+			curI<span style="color:#666">++</span>
+			err <span style="color:#666">:=</span> (<span style="color:#666">*</span>fc)[curI](controller, chainFunc)
+			curI<span style="color:#666">--</span>
+			<span style="color:#008000;font-weight:bold">return</span> err
+		}
+		<span style="color:#008000;font-weight:bold">return</span> (<span style="color:#666">*</span>fc)[<span style="color:#666">0</span>](controller, chainFunc)
+	}(controller, f)
+</code></pre></div><h3 id="32-链式http请求过滤的使用">3.2 链式http请求过滤的使用</h3>
+<div class="highlight"><pre style=";-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#408080;font-style:italic">// 测试用filter 如果input字段为-2则报错
+</span><span style="color:#408080;font-style:italic"></span><span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">myFilter2</span>(controller <span style="color:#666">*</span>ghttp.GRegisterController, f ghttp.HandleFunc) <span style="color:#b00040">error</span> {
+	req, ok <span style="color:#666">:=</span> controller.Req.(<span style="color:#666">*</span>gloryHttpReq)
+	<span style="color:#008000;font-weight:bold">if</span> !ok {
+		log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;req type err&#34;</span>)
+		<span style="color:#008000;font-weight:bold">return</span> errors.<span style="color:#00f">New</span>(<span style="color:#ba2121">&#34;req type err&#34;</span>)
+	}
+
+	<span style="color:#008000;font-weight:bold">if</span> req.Input[<span style="color:#666">0</span>] <span style="color:#666">==</span> <span style="color:#666">-</span><span style="color:#666">2</span> {
+		log.<span style="color:#00f">Error</span>(<span style="color:#ba2121">&#34;filting because input == -2&#34;</span>)
+		<span style="color:#008000;font-weight:bold">return</span> errors.<span style="color:#00f">New</span>(<span style="color:#ba2121">&#34;filting because input == -2&#34;</span>)
+	}
+	err <span style="color:#666">:=</span> <span style="color:#00f">f</span>(controller)
+	<span style="color:#008000;font-weight:bold">return</span> err
+}
+
+<span style="color:#008000;font-weight:bold">func</span> <span style="color:#00f">main</span>() {
+	gloryServer <span style="color:#666">:=</span> glory.<span style="color:#00f">NewServer</span>()
+	httpService <span style="color:#666">:=</span> service.<span style="color:#00f">NewHttpService</span>(<span style="color:#ba2121">&#34;httpDemo&#34;</span>)
+	httpService.<span style="color:#00f">RegisterRouter</span>(<span style="color:#ba2121">&#34;/testwithfilter/{hello}/{hello2}&#34;</span>, testHandler, <span style="color:#666">&amp;</span>gloryHttpReq{}, <span style="color:#666">&amp;</span>gloryHttpRsp{}, <span style="color:#ba2121">&#34;POST&#34;</span>, myFilter1, myFilter2)
+	gloryServer.<span style="color:#00f">RegisterService</span>(httpService)
+	gloryServer.<span style="color:#00f">Run</span>()
+}
+</code></pre></div><p>可按照此方法，将，myfilter1，myfilter2等过滤器注册在httpService上，从而针对请求进行过滤。</p>
+<p>在GoOnline项目中，此filter被广泛应用于auth部分token鉴权。</p>
+
+
+    <footer class="site-footer">
+  <span class="site-footer-credits">
+    
+  </span>
+</footer>
+
+  </section>
+  
+  
+  <script>
+  window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+  ga('create', 'UA-123456789-1', 'auto');
+  ga('send', 'pageview');
+  </script>
+  <script async src='https://www.google-analytics.com/analytics.js'></script>
+  
+
+</body>
+</html>
